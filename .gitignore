@@ -169,3 +169,14 @@ input
 
 .gradio/
 .ruff_cache/
+
+# node modules
+node_modules/
+package-lock.json
+
+# database files
+aide.db
+data/
+logs/
+uploads/
+workspaces/

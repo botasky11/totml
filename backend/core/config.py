@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "AIDE ML - Enterprise"
     VERSION: str = "2.0.0"
     DESCRIPTION: str = "Enterprise Machine Learning Engineering Agent"
+
+    # Base URL for the API
+    OPENAI_BASE_URL: str = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
     
     # CORS Settings
     BACKEND_CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:5173"]

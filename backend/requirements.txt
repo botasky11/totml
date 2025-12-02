@@ -11,3 +11,4 @@ sqlalchemy==2.0.35
 aiosqlite==0.20.0
 redis==5.2.0
 celery==5.4.0
+greenlet==3.2.4

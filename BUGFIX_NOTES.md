@@ -113,6 +113,129 @@ TypeScript 通常能在编译时捕获这类错误，但在动态引用场景下
 
 ---
 
-**修复日期**: 2024-12-02  
-**修复版本**: commit ace76cc  
-**影响范围**: 前端页面加载和实验详情展示
+## Bug #2: 数据库会话管理问题
+
+### 问题描述
+```
+sqlalchemy.exc.InvalidRequestError: This session is in 'prepared' state; 
+no further SQL can be emitted within this transaction.
+```
+
+后端在运行实验时报错，前端获取实验列表时返回500错误。
+
+### 根本原因
+
+后台异步任务使用了API请求的数据库会话：
+
+```python
+@router.post("/{experiment_id}/run")
+async def run_experiment(experiment_id: str, db: AsyncSession = Depends(get_db)):
+    service = ExperimentService(db)  # 使用请求的会话
+    
+    # 后台任务仍在使用这个会话
+    asyncio.create_task(service.run_experiment_async(experiment_id, callback))
+    
+    return {"message": "started"}  # API请求结束，会话被关闭
+    # 但后台任务还在尝试使用已关闭的会话！
+```
+
+**问题流程**：
+1. API请求创建数据库会话
+2. 启动后台任务，传递会话引用
+3. API请求返回，会话被提交并关闭
+4. 后台任务继续运行，尝试使用已关闭的会话
+5. SQLAlchemy报错："会话已处于prepared状态"
+
+### 解决方案
+
+为后台任务创建独立的数据库会话：
+
+```python
+@router.post("/{experiment_id}/run")
+async def run_experiment(experiment_id: str, db: AsyncSession = Depends(get_db)):
+    service = ExperimentService(db)
+    experiment = await service.get_experiment(experiment_id)
+    
+    # 创建独立的后台任务
+    async def run_background_task():
+        from backend.database import async_session_maker
+        
+        # 为后台任务创建独立的会话
+        async with async_session_maker() as bg_db:
+            try:
+                bg_service = ExperimentService(bg_db)
+                await bg_service.run_experiment_async(experiment_id, callback)
+            except Exception as e:
+                logger.error(f"Background task error: {e}")
+                # 错误处理
+    
+    asyncio.create_task(run_background_task())
+    return {"message": "started"}
+```
+
+**关键改进**：
+1. 使用 `async_session_maker()` 创建新会话
+2. 后台任务有自己的会话生命周期
+3. 使用 `async with` 确保会话正确关闭
+4. 添加异常处理和错误状态更新
+
+### 会话管理最佳实践
+
+#### ❌ 错误做法
+```python
+# 不要在后台任务中使用请求会话
+@app.post("/start")
+async def start(db: AsyncSession = Depends(get_db)):
+    asyncio.create_task(background_task(db))  # 错误！
+```
+
+#### ✅ 正确做法
+```python
+# 为后台任务创建独立会话
+@app.post("/start")
+async def start(db: AsyncSession = Depends(get_db)):
+    async def task():
+        async with async_session_maker() as task_db:
+            await background_task(task_db)
+    asyncio.create_task(task())
+```
+
+### 其他需要注意的场景
+
+1. **Celery任务**: 也需要独立会话
+2. **定时任务**: 使用独立会话
+3. **WebSocket处理**: 长连接也需要独立会话管理
+4. **批量操作**: 考虑会话超时和连接池
+
+### 相关文件
+
+- `backend/api/experiments.py`
+- `backend/services/experiment_service.py`
+- `backend/database/base.py`
+
+### 提交信息
+
+```
+fix: resolve database session management issue in background tasks
+
+- Create independent database session for background experiment execution
+- Prevent 'session in prepared state' error by isolating task sessions
+- Add proper error handling and failed status update for background tasks
+```
+
+### 验证测试
+
+修复后应验证：
+1. ✅ 创建实验后可以正常运行
+2. ✅ 后台任务执行不报会话错误
+3. ✅ 实验列表API返回200
+4. ✅ 实验状态正确更新
+5. ✅ 错误时状态更新为failed
+
+---
+
+**更新日期**: 2024-12-02  
+**修复版本**: 
+- Bug #1: commit ace76cc  
+- Bug #2: commit d6638e9  
+**影响范围**: 前端页面加载、实验详情展示、后台任务执行

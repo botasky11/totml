@@ -121,8 +121,13 @@ export function ExperimentDetail() {
             </Button>
           )}
           {experiment.best_solution_code && (
-            <Button onClick={handleDownload} variant="outline" className="gap-2">
-              <Download className="w-4 h-4" />
+            <Button 
+              onClick={handleDownload} 
+              variant="secondary" 
+              size="lg"
+              className="gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all duration-200"
+            >
+              <Download className="w-5 h-5" />
               下载方案
             </Button>
           )}

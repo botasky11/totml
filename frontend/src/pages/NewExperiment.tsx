@@ -34,6 +34,10 @@ export function NewExperiment() {
     onSuccess: (experiment) => {
       navigate(`/experiments/${experiment.id}`);
     },
+    onError: (error) => {
+      console.error('Failed to create experiment:', error);
+      alert('Failed to create experiment. Please check console for details.');
+    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {

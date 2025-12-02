@@ -21,7 +21,7 @@ export function ExperimentDetail() {
     queryKey: ['experiment', id],
     queryFn: () => experimentAPI.get(id!),
     enabled: !!id,
-    refetchInterval: experiment?.status === 'running' ? 2000 : false,
+    refetchInterval: (data) => data?.status === 'running' ? 2000 : false,
   });
 
   const { data: nodes } = useQuery({

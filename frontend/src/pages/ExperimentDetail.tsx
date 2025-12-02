@@ -21,7 +21,11 @@ export function ExperimentDetail() {
     queryKey: ['experiment', id],
     queryFn: () => experimentAPI.get(id!),
     enabled: !!id,
-    refetchInterval: (data) => data?.status === 'running' ? 2000 : false,
+    // 轮询条件：运行中或待运行状态时持续轮询，确保能捕获到失败状态
+    refetchInterval: (data) => {
+      const status = data?.status;
+      return (status === 'running' || status === 'pending') ? 2000 : false;
+    },
   });
 
   const { data: nodes } = useQuery({
@@ -32,7 +36,8 @@ export function ExperimentDetail() {
 
   // WebSocket connection
   useEffect(() => {
-    if (!id || experiment?.status !== 'running') return;
+    // 连接WebSocket：运行中或待运行状态时连接
+    if (!id || (experiment?.status !== 'running' && experiment?.status !== 'pending')) return;
 
     const ws = new WebSocketService(id);
     ws.connect();
@@ -40,7 +45,8 @@ export function ExperimentDetail() {
     const unsubscribe = ws.subscribe((message) => {
       setWsMessages((prev) => [...prev, message]);
       
-      if (message.type === 'status_update' || message.type === 'complete') {
+      // 处理各种消息类型：状态更新、完成、错误
+      if (message.type === 'status_update' || message.type === 'complete' || message.type === 'error') {
         refetch();
       }
     });
@@ -53,8 +59,15 @@ export function ExperimentDetail() {
 
   const handleRun = async () => {
     if (!id) return;
-    await experimentAPI.run(id);
-    refetch();
+    try {
+      await experimentAPI.run(id);
+      // 立即刷新以获取最新状态
+      await refetch();
+    } catch (error) {
+      console.error('Failed to start experiment:', error);
+      // 即使出错也刷新，以获取最新的错误状态
+      await refetch();
+    }
   };
 
   const handleDownload = () => {
@@ -153,6 +166,32 @@ export function ExperimentDetail() {
               </div>
               <div className="text-sm text-gray-600">
                 进度: {Math.round(experiment.progress * 100)}%
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Failed Status Card */}
+      {experiment.status === 'failed' && (
+        <Card className="mb-6 border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0">
+                  <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-red-800">实验运行失败</h3>
+                  {experiment.error_message && (
+                    <div className="mt-2 text-sm text-red-700 bg-white rounded p-3 border border-red-200">
+                      <p className="font-medium mb-1">错误信息：</p>
+                      <p className="whitespace-pre-wrap break-words">{experiment.error_message}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>

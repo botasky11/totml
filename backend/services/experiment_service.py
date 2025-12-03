@@ -225,6 +225,14 @@ class ExperimentService:
                         analysis=node.analysis,
                     )
             
+            # Generate final tree visualization
+            from aide.utils.config import save_run
+            try:
+                save_run(aide_exp.cfg, aide_exp.journal, generate_viz=True)
+                logger.info(f"Generated final tree visualization for experiment {experiment_id}")
+            except Exception as viz_error:
+                logger.warning(f"Failed to generate tree visualization: {viz_error}")
+            
             # Get best solution
             best_node = aide_exp.journal.get_best_node()
             best_solution_code = str(best_node.code) if best_node else None

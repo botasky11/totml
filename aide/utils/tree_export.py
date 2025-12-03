@@ -31,7 +31,15 @@ def generate_layout(n_nodes, edges, layout_type="rt"):
 
 def normalize_layout(layout: np.ndarray):
     """Normalize layout to [0, 1]"""
-    layout = (layout - layout.min(axis=0)) / (layout.max(axis=0) - layout.min(axis=0))
+    # Handle case where all values are the same (single node or all nodes at same position)
+    layout_range = layout.max(axis=0) - layout.min(axis=0)
+    # Avoid division by zero: if range is 0, keep original values
+    with np.errstate(divide='ignore', invalid='ignore'):
+        layout = np.where(
+            layout_range != 0,
+            (layout - layout.min(axis=0)) / layout_range,
+            layout - layout.min(axis=0)  # Will be 0 if all values are same
+        )
     layout[:, 1] = 1 - layout[:, 1]
     layout[:, 1] = np.nan_to_num(layout[:, 1], nan=0)
     layout[:, 0] = np.nan_to_num(layout[:, 0], nan=0.5)

@@ -53,9 +53,11 @@ class Experiment:
         )
 
     def run(self, steps: int) -> Solution:
-        for _i in range(steps):
+        for i in range(steps):
             self.agent.step(exec_callback=self.interpreter.run)
-            save_run(self.cfg, self.journal)
+            # 只在最后一步生成可视化，中间步骤跳过以提高性能
+            is_last_step = (i == steps - 1)
+            save_run(self.cfg, self.journal, generate_viz=is_last_step)
         self.interpreter.cleanup_session()
 
         best_node = self.journal.get_best_node(only_good=False)

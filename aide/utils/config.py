@@ -184,15 +184,19 @@ def prep_agent_workspace(cfg: Config):
         preproc_data(cfg.workspace_dir / "input")
 
 
-def save_run(cfg: Config, journal):
+def save_run(cfg: Config, journal, generate_viz=True):
     cfg.log_dir.mkdir(parents=True, exist_ok=True)
 
     # save journal
     serialize.dump_json(journal, cfg.log_dir / "journal.json")
     # save config
     OmegaConf.save(config=cfg, f=cfg.log_dir / "config.yaml")
-    # create the tree + code visualization
-    tree_export.generate(cfg, journal, cfg.log_dir / "tree_plot.html")
+    # create the tree + code visualization (可选，因为这个操作比较耗时)
+    if generate_viz:
+        try:
+            tree_export.generate(cfg, journal, cfg.log_dir / "tree_plot.html")
+        except Exception as e:
+            print(f"Warning: Failed to generate tree visualization: {e}")
     # save the best found solution
     best_node = journal.get_best_node(only_good=False)
     with open(cfg.log_dir / "best_solution.py", "w") as f:

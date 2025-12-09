@@ -19,6 +19,7 @@ export function ExperimentDetail() {
   const [isStarting, setIsStarting] = useState(false);
   const wsRef = useRef<WebSocketService | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
+  const isMountedRef = useRef<boolean>(false); // 防止React Strict Mode双重挂载
   
   // 实时进度状态 - 用于立即响应WebSocket消息，避免异步refetch导致的延迟
   const [realtimeProgress, setRealtimeProgress] = useState<{
@@ -56,12 +57,20 @@ export function ExperimentDetail() {
       return;
     }
 
-    // 防止重复创建连接（React Strict Mode可能导致）
+    // 防止React Strict Mode双重挂载导致重复连接
+    if (isMountedRef.current) {
+      console.log('[EXP_DETAIL] ⏭️ Component already mounted (React Strict Mode), skipping WebSocket creation');
+      return;
+    }
+
+    // 防止重复创建连接
     if (wsRef.current) {
       console.log('[EXP_DETAIL] ⏭️ WebSocket already exists, skipping creation');
       return;
     }
 
+    // 标记组件已挂载
+    isMountedRef.current = true;
     console.log('[EXP_DETAIL] 🔌 Initializing WebSocket connection for experiment:', id);
     const ws = new WebSocketService(id);
     ws.connect();
@@ -111,17 +120,25 @@ export function ExperimentDetail() {
     unsubscribeRef.current = unsubscribe;
     console.log('[EXP_DETAIL] ✅ WebSocket subscription created for experiment:', id);
 
-    // Cleanup：只在组件卸载或ID变化时执行
+    // Cleanup：只在组件真正卸载或ID变化时执行
     return () => {
-      console.log('[EXP_DETAIL] 🧹 Cleanup: Disconnecting WebSocket for experiment:', id);
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
-        unsubscribeRef.current = null;
-      }
+      // 在开发环境的Strict Mode下，这个cleanup会被调用两次
+      // 但由于isMountedRef的保护，第二次挂载时不会重新创建连接
+      console.log('[EXP_DETAIL] 🧹 Cleanup function called for experiment:', id);
+      
+      // 只在组件真正卸载时才断开连接（ID变化或离开页面）
       if (wsRef.current) {
+        console.log('[EXP_DETAIL] 🔌 Disconnecting WebSocket');
+        if (unsubscribeRef.current) {
+          unsubscribeRef.current();
+          unsubscribeRef.current = null;
+        }
         wsRef.current.disconnect();
         wsRef.current = null;
       }
+      
+      // 重置挂载标志（为下次挂载准备）
+      isMountedRef.current = false;
     };
   }, [id]); // 只依赖ID，确保连接稳定
 

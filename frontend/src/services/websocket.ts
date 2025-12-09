@@ -140,12 +140,48 @@ export class WebSocketService {
     }
     
     if (this.ws) {
-      console.log(`[WS_CLIENT] Closing WebSocket connection, current state: ${this.ws.readyState}`);
-      this.ws.close();
+      const state = this.ws.readyState;
+      console.log(`[WS_CLIENT] Closing WebSocket connection, current state: ${state} (${this.getStateName(state)})`);
+      
+      // 只在OPEN或CLOSING状态时关闭，避免在CONNECTING状态下关闭导致警告
+      if (state === WebSocket.OPEN || state === WebSocket.CLOSING) {
+        this.ws.close();
+      } else if (state === WebSocket.CONNECTING) {
+        console.log(`[WS_CLIENT] ⏳ Connection still establishing, waiting for onopen/onerror to close`);
+        // 在CONNECTING状态下，设置一个标志让onopen/onerror处理关闭
+        const tempWs = this.ws;
+        const originalOnOpen = this.ws.onopen;
+        const originalOnError = this.ws.onerror;
+        
+        this.ws.onopen = () => {
+          console.log(`[WS_CLIENT] Connection opened during disconnect, closing immediately`);
+          if (tempWs.readyState === WebSocket.OPEN) {
+            tempWs.close();
+          }
+        };
+        
+        this.ws.onerror = (error) => {
+          console.log(`[WS_CLIENT] Connection failed during disconnect, ignoring`);
+          // 调用原始错误处理（如果需要）
+          if (originalOnError) {
+            originalOnError.call(tempWs, error);
+          }
+        };
+      }
       this.ws = null;
     }
     console.log(`[WS_CLIENT] Clearing ${this.handlers.size} handlers`);
     this.handlers.clear();
+  }
+  
+  private getStateName(state: number): string {
+    switch (state) {
+      case WebSocket.CONNECTING: return 'CONNECTING';
+      case WebSocket.OPEN: return 'OPEN';
+      case WebSocket.CLOSING: return 'CLOSING';
+      case WebSocket.CLOSED: return 'CLOSED';
+      default: return 'UNKNOWN';
+    }
   }
 
   send(message: any) {

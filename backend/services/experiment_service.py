@@ -197,6 +197,9 @@ class ExperimentService:
             # Run steps - manually control each step without intermediate visualizations
             from aide.utils.config import save_run
             logger.info(f"[EXP_SERVICE] Starting {experiment.num_steps} steps execution")
+            
+            # Track saved nodes count to avoid duplicate writes
+            saved_nodes_count = 0
 
             for step in range(experiment.num_steps):
                 logger.info(f"[EXP_SERVICE] Executing step {step + 1}/{experiment.num_steps}")
@@ -236,8 +239,11 @@ class ExperimentService:
                 else:
                     logger.warning(f"[EXP_SERVICE] Send progress update Failed: No active WebSocket connection for experiment {experiment_id}")
                 
-                # Save nodes from journal
-                for node in aide_exp.journal.nodes:
+                # Save ONLY NEW nodes from journal (避免重复写入)
+                new_nodes = aide_exp.journal.nodes[saved_nodes_count:]
+                logger.info(f"[EXP_SERVICE] Saving {len(new_nodes)} new nodes (total in journal: {len(aide_exp.journal.nodes)}, already saved: {saved_nodes_count})")
+                
+                for node in new_nodes:
                     await self.create_node(
                         experiment_id=experiment_id,
                         step=node.step,
@@ -248,6 +254,10 @@ class ExperimentService:
                         term_out=node.term_out,
                         analysis=node.analysis,
                     )
+                
+                # Update saved nodes count
+                saved_nodes_count = len(aide_exp.journal.nodes)
+                logger.info(f"[EXP_SERVICE] Nodes saved successfully, total saved: {saved_nodes_count}")
             
             # Cleanup interpreter session
             aide_exp.interpreter.cleanup_session()

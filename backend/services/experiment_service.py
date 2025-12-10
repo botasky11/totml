@@ -260,9 +260,18 @@ class ExperimentService:
                 logger.warning(f"Failed to generate tree visualization: {viz_error}")
             
             # Get best solution
-            best_node = aide_exp.journal.get_best_node()
+            # 首先尝试获取非buggy的最佳节点
+            best_node = aide_exp.journal.get_best_node(only_good=True)
+            
+            # 如果没有非buggy节点，获取所有节点中的第一个（即使是buggy的）
+            if not best_node and aide_exp.journal.nodes:
+                logger.info(f"[EXP_SERVICE] No good nodes found, using first node from all nodes")
+                best_node = aide_exp.journal.nodes[0]
+            
             best_solution_code = str(best_node.code) if best_node else None
             best_metric_value = float(best_node.metric.value) if (best_node and best_node.metric and best_node.metric.value is not None) else None
+            
+            logger.info(f"[EXP_SERVICE] Best node selected: code_length={len(best_solution_code) if best_solution_code else 0}, metric={best_metric_value}")
             
             # Collect journal data
             journal_data = [

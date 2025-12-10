@@ -204,14 +204,27 @@ export function ExperimentDetail() {
     window.URL.revokeObjectURL(url);
   };
 
-  // Prepare chart data
-  const chartData = nodes
-    ?.filter(node => !node.is_buggy && node.metric_value)
+  // Prepare chart data - 包括所有节点（即使是buggy的），便于调试
+  // 如果有非buggy节点，优先显示；否则显示所有节点
+  const goodChartData = nodes
+    ?.filter(node => !node.is_buggy && node.metric_value != null)
     .map((node, index) => ({
       step: node.step,
       metric: node.metric_value,
       index: index + 1,
+      isBuggy: false,
     })) || [];
+    
+  const allChartData = nodes
+    ?.map((node, index) => ({
+      step: node.step,
+      metric: node.metric_value,
+      index: index + 1,
+      isBuggy: node.is_buggy,
+    })) || [];
+  
+  // 如果有非buggy节点，使用好的数据；否则使用所有数据
+  const chartData = goodChartData.length > 0 ? goodChartData : allChartData;
 
   if (isLoading) {
     return (
@@ -454,36 +467,101 @@ export function ExperimentDetail() {
         )}
 
         {activeTab === 'code' && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Code className="w-5 h-5" />
-                最佳方案代码
-              </CardTitle>
-              <CardDescription>
-                智能助手生成的最佳性能代码
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {experiment.best_solution_code ? (
-                <SyntaxHighlighter
-                  language="python"
-                  style={vscDarkPlus}
-                  customStyle={{
-                    borderRadius: '0.5rem',
-                    fontSize: '0.875rem',
-                  }}
-                  showLineNumbers
-                >
-                  {experiment.best_solution_code}
-                </SyntaxHighlighter>
-              ) : (
-                <p className="text-gray-500 text-center py-8">
-                  暂无方案代码
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <div className="space-y-4">
+            {/* 最佳方案代码 */}
+            {experiment.best_solution_code && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Code className="w-5 h-5" />
+                    最佳方案代码
+                  </CardTitle>
+                  <CardDescription>
+                    智能助手生成的最佳性能代码
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <SyntaxHighlighter
+                    language="python"
+                    style={vscDarkPlus}
+                    customStyle={{
+                      borderRadius: '0.5rem',
+                      fontSize: '0.875rem',
+                    }}
+                    showLineNumbers
+                  >
+                    {experiment.best_solution_code}
+                  </SyntaxHighlighter>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* 所有迭代的代码 */}
+            {nodes && nodes.length > 0 ? (
+              nodes.map((node, index) => (
+                <Card key={node.id} className={node.is_buggy ? 'border-red-300' : 'border-green-300'}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Code className="w-4 h-4" />
+                      步骤 {node.step} {node.is_buggy && <span className="text-red-500 text-sm">(包含错误)</span>}
+                    </CardTitle>
+                    {node.plan && (
+                      <CardDescription className="text-sm">
+                        <strong>计划:</strong> {node.plan}
+                      </CardDescription>
+                    )}
+                    {node.metric_value != null && (
+                      <CardDescription className="text-sm">
+                        <strong>指标值:</strong> {node.metric_value}
+                      </CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <SyntaxHighlighter
+                      language="python"
+                      style={vscDarkPlus}
+                      customStyle={{
+                        borderRadius: '0.5rem',
+                        fontSize: '0.75rem',
+                        maxHeight: '400px',
+                      }}
+                      showLineNumbers
+                    >
+                      {node.code}
+                    </SyntaxHighlighter>
+                    
+                    {/* 显示终端输出（如果有错误）*/}
+                    {node.term_out && node.is_buggy && (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-semibold text-red-600 mb-2">终端输出:</h4>
+                        <pre className="bg-red-50 border border-red-200 rounded p-3 text-xs text-red-900 overflow-x-auto">
+                          {node.term_out}
+                        </pre>
+                      </div>
+                    )}
+                    
+                    {/* 显示分析（如果有）*/}
+                    {node.analysis && (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-2">分析:</h4>
+                        <p className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded p-3">
+                          {node.analysis}
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-gray-500 text-center py-8">
+                    暂无代码数据
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
 
         {activeTab === 'metrics' && (

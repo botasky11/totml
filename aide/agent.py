@@ -320,13 +320,22 @@ class Agent:
             ),
         )
 
+        # Check if response is a valid dict (handle case where API returns empty string or invalid response)
+        if not isinstance(response, dict):
+            logger.warning(f"OpenAI API returned invalid response type: {type(response).__name__}. Expected dict, got: {response}")
+            # Treat as buggy with no valid metric
+            node.analysis = "Error: Invalid API response received. Unable to parse execution results."
+            node.is_buggy = True
+            node.metric = WorstMetricValue()
+            return
+
         # if the metric isn't a float then fill the metric with the worst metric
-        if not isinstance(response["metric"], float):
+        if not isinstance(response.get("metric"), float):
             response["metric"] = None
 
-        node.analysis = response["summary"]
+        node.analysis = response.get("summary", "No summary provided")
         node.is_buggy = (
-            response["is_bug"]
+            response.get("is_bug", False)
             or node.exc_type is not None
             or response["metric"] is None
         )
@@ -335,5 +344,5 @@ class Agent:
             node.metric = WorstMetricValue()
         else:
             node.metric = MetricValue(
-                response["metric"], maximize=not response["lower_is_better"]
+                response["metric"], maximize=not response.get("lower_is_better", True)
             )

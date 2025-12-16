@@ -215,12 +215,14 @@ class Interpreter:
 
         """
 
-        logger.debug(f"REPL is executing code (reset_session={reset_session})")
+        logger.info(f"Interpreter executing code (reset_session={reset_session}, working_dir={self.working_dir})")
 
         if reset_session:
             if self.process is not None:
                 # terminate and clean up previous process
+                logger.info("Cleaning up previous interpreter session")
                 self.cleanup_session()
+            logger.info("Creating new interpreter process")
             self.create_process()
         else:
             # reset_session needs to be True on first exec
@@ -301,10 +303,17 @@ class Interpreter:
         e_cls_name, exc_info, exc_stack = state[1:]
 
         if e_cls_name == "TimeoutError":
+            logger.warning(f"Code execution timed out after {humanize.naturaldelta(self.timeout)}")
             output.append(
                 f"TimeoutError: Execution exceeded the time limit of {humanize.naturaldelta(self.timeout)}"
             )
+        elif e_cls_name:
+            logger.info(f"Code execution completed with exception: {e_cls_name} (time: {exec_time:.2f}s)")
+            output.append(
+                f"Execution time: {humanize.naturaldelta(exec_time)} seconds (time limit is {humanize.naturaldelta(self.timeout)})."
+            )
         else:
+            logger.info(f"Code execution completed successfully (time: {exec_time:.2f}s)")
             output.append(
                 f"Execution time: {humanize.naturaldelta(exec_time)} seconds (time limit is {humanize.naturaldelta(self.timeout)})."
             )

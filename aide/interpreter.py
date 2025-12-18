@@ -234,7 +234,7 @@ class Interpreter:
 
         # wait for child to actually start execution (we don't want interrupt child setup)
         try:
-            state = self.event_outq.get(timeout=10)
+            state = self.event_outq.get(timeout=20)
         except queue.Empty:
             msg = "REPL child process failed to start execution"
             logger.critical(msg)
@@ -248,10 +248,20 @@ class Interpreter:
         # if the child process dies without this flag being set, it's an unexpected termination
         child_in_overtime = False
 
+        output: list[str] = []
+
         while True:
+            # Continuously drain the output queue to prevent child process from blocking
+            try:
+                while True:
+                    output.append(self.result_outq.get_nowait())
+            except queue.Empty:
+                pass
+
             try:
                 # check if the child is done
-                state = self.event_outq.get(timeout=1)  # wait for state:finished
+                # Reduce timeout to allow frequent draining of output queue
+                state = self.event_outq.get(timeout=0.2)
                 assert state[0] == "state:finished", state
                 exec_time = time.time() - start_time
                 break
@@ -284,7 +294,7 @@ class Interpreter:
                         exec_time = self.timeout
                         break
 
-        output: list[str] = []
+
         # read all stdout/stderr from child up to the EOF marker
         # waiting until the queue is empty is not enough since
         # the feeder thread in child might still be adding to the queue

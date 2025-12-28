@@ -3,6 +3,8 @@
 import json
 import logging
 import time
+import os
+import re
 
 import litellm
 from .utils import FunctionSpec, OutputType, opt_messages_to_list, backoff_create
@@ -40,7 +42,6 @@ def query(
         filtered_kwargs["tools"] = [func_spec.as_openai_tool_dict]
         filtered_kwargs["tool_choice"] = func_spec.openai_tool_choice_dict
 
-    logger.info(f"LiteLLM request: model={filtered_kwargs.get('model')}")
     logger.info(f"LiteLLM request: system={system_message}, user={user_message}")
 
     t0 = time.time()

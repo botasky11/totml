@@ -62,9 +62,9 @@ export class WebSocketService {
       }
     };
 
-    this.ws.onerror = (error) => {
+    this.ws.onerror = () => {
       const readyState = this.ws?.readyState;
-      
+
       // 友好的错误处理，区分不同场景
       if (readyState === WebSocket.CONNECTING || readyState === undefined) {
         console.log(`[WS_CLIENT] ⚠️ Connection interrupted during handshake (likely React Strict Mode in dev)`);
@@ -80,7 +80,7 @@ export class WebSocketService {
       console.log(`[WS_CLIENT] Close code: ${event.code}, reason: ${event.reason}`);
       console.log(`[WS_CLIENT] Was clean: ${event.wasClean}`);
       console.log(`[WS_CLIENT] Should reconnect: ${this.shouldReconnect}`);
-      
+
       // 只在需要重连时才尝试重连（排除主动关闭的情况）
       if (this.shouldReconnect) {
         this.attemptReconnect();
@@ -94,7 +94,7 @@ export class WebSocketService {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       const delay = this.reconnectDelay * this.reconnectAttempts;
-      
+
       // 如果是第一次重连，可能是开发环境的Strict Mode导致的，日志友好一些
       if (this.reconnectAttempts === 1) {
         console.log(`[WS_CLIENT] 🔄 Reconnecting... (1/${this.maxReconnectAttempts})`);
@@ -129,20 +129,20 @@ export class WebSocketService {
 
   disconnect() {
     console.log(`[WS_CLIENT] Disconnecting WebSocket for experiment ${this.experimentId}`);
-    
+
     // 设置标志：不应该重连（这是主动关闭）
     this.shouldReconnect = false;
-    
+
     // 清除任何待处理的连接超时
     if (this.connectTimeout !== null) {
       clearTimeout(this.connectTimeout);
       this.connectTimeout = null;
     }
-    
+
     if (this.ws) {
       const state = this.ws.readyState;
       console.log(`[WS_CLIENT] Closing WebSocket connection, current state: ${state} (${this.getStateName(state)})`);
-      
+
       // 只在OPEN或CLOSING状态时关闭，避免在CONNECTING状态下关闭导致警告
       if (state === WebSocket.OPEN || state === WebSocket.CLOSING) {
         this.ws.close();
@@ -150,16 +150,16 @@ export class WebSocketService {
         console.log(`[WS_CLIENT] ⏳ Connection still establishing, waiting for onopen/onerror to close`);
         // 在CONNECTING状态下，设置一个标志让onopen/onerror处理关闭
         const tempWs = this.ws;
-        const originalOnOpen = this.ws.onopen;
+        // const originalOnOpen = this.ws.onopen;
         const originalOnError = this.ws.onerror;
-        
+
         this.ws.onopen = () => {
           console.log(`[WS_CLIENT] Connection opened during disconnect, closing immediately`);
           if (tempWs.readyState === WebSocket.OPEN) {
             tempWs.close();
           }
         };
-        
+
         this.ws.onerror = (error) => {
           console.log(`[WS_CLIENT] Connection failed during disconnect, ignoring`);
           // 调用原始错误处理（如果需要）
@@ -173,7 +173,7 @@ export class WebSocketService {
     console.log(`[WS_CLIENT] Clearing ${this.handlers.size} handlers`);
     this.handlers.clear();
   }
-  
+
   private getStateName(state: number): string {
     switch (state) {
       case WebSocket.CONNECTING: return 'CONNECTING';

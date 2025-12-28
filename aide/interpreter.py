@@ -217,30 +217,40 @@ class Interpreter:
 
         logger.info(f"Interpreter executing code (reset_session={reset_session}, working_dir={self.working_dir})")
 
-        if reset_session:
-            if self.process is not None:
-                # terminate and clean up previous process
-                logger.info("Cleaning up previous interpreter session")
-                self.cleanup_session()
-            logger.info("Creating new interpreter process")
-            self.create_process()
-        else:
-            # reset_session needs to be True on first exec
-            assert self.process is not None
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                if reset_session:
+                    if self.process is not None:
+                        # terminate and clean up previous process
+                        logger.info("Cleaning up previous interpreter session")
+                        self.cleanup_session()
+                    logger.info(f"Creating new interpreter process (attempt {attempt + 1}/{max_retries})")
+                    self.create_process()
+                else:
+                    # reset_session needs to be True on first exec
+                    assert self.process is not None
 
-        assert self.process.is_alive()
+                assert self.process.is_alive()
 
-        self.code_inq.put(code)
+                self.code_inq.put(code)
 
-        # wait for child to actually start execution (we don't want interrupt child setup)
-        try:
-            state = self.event_outq.get(timeout=20)
-        except queue.Empty:
-            msg = "REPL child process failed to start execution"
-            logger.critical(msg)
-            while not self.result_outq.empty():
-                logger.error(f"REPL output queue dump: {self.result_outq.get()}")
-            raise RuntimeError(msg) from None
+                # wait for child to actually start execution (we don't want interrupt child setup)
+                # increased timeout slightly for robustness
+                state = self.event_outq.get(timeout=20)
+                break
+            except queue.Empty:
+                if attempt == max_retries - 1:
+                    msg = "REPL child process failed to start execution after multiple attempts"
+                    logger.critical(msg)
+                    while not self.result_outq.empty():
+                        logger.error(f"REPL output queue dump: {self.result_outq.get()}")
+                    raise RuntimeError(msg) from None
+                else:
+                    logger.warning(f"REPL child process failed to start execution (attempt {attempt + 1}/{max_retries}), retrying...")
+                    self.cleanup_session()
+                    reset_session = True  # Force reset for next attempt
+
         assert state[0] == "state:ready", state
         start_time = time.time()
 

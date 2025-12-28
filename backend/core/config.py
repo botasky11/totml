@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: Optional[str] = os.getenv("ANTHROPIC_API_KEY")
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")
     OPENROUTER_API_KEY: Optional[str] = os.getenv("OPENROUTER_API_KEY")
+    DASHSCOPE_API_KEY: Optional[str] = os.getenv("DASHSCOPE_API_KEY")
     
     # File Storage
     UPLOAD_DIR: str = "./uploads"

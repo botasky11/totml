@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Play, Trash2, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { experimentAPI } from '@/services/api';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import type { Experiment, ExperimentStatus } from '@/types';
+import type { ExperimentStatus } from '@/types';
 import { format } from 'date-fns';
 
 const getStatusIcon = (status: ExperimentStatus) => {

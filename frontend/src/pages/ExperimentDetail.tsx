@@ -11,6 +11,30 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { WebSocketMessage } from '@/types';
 
+
+const DescriptionWithToggle = ({ description }: { description: string }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const shouldTruncate = description && description.length > 50; // Truncate if longer than 50 chars
+
+  if (!description) return null;
+
+  return (
+    <div>
+      <p className={`text-gray-600 ${!isExpanded ? 'line-clamp-2' : ''}`} style={{ wordBreak: 'break-all' }}>
+        {description}
+      </p>
+      {shouldTruncate && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="text-blue-500 hover:text-blue-700 text-sm mt-1 font-medium focus:outline-none"
+        >
+          {isExpanded ? '收起' : '展开'}
+        </button>
+      )}
+    </div>
+  );
+};
+
 export function ExperimentDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -20,7 +44,7 @@ export function ExperimentDetail() {
   const wsRef = useRef<WebSocketService | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const isMountedRef = useRef<boolean>(false); // 防止React Strict Mode双重挂载
-  
+
   // 实时进度状态 - 用于立即响应WebSocket消息，避免异步refetch导致的延迟
   const [realtimeProgress, setRealtimeProgress] = useState<{
     current_step: number;
@@ -87,7 +111,7 @@ export function ExperimentDetail() {
       // 处理各种消息类型：状态更新、完成、错误
       if (message.type === 'status_update') {
         console.log('[EXP_DETAIL] 🔄 Status update received');
-        
+
         // 立即更新实时进度，避免refetch()延迟
         const data = message.data as any;
         if (data) {
@@ -102,15 +126,15 @@ export function ExperimentDetail() {
             status: data.status || 'running'
           });
         }
-        
+
         // 后台同步数据
         refetch();
       } else if (message.type === 'complete' || message.type === 'error') {
         console.log('[EXP_DETAIL] 🏁 Experiment finished, message type:', message.type);
-        
+
         // 清除实时进度，使用服务器数据
         setRealtimeProgress(null);
-        
+
         // 刷新数据
         refetch();
         refetchNodes();
@@ -125,7 +149,7 @@ export function ExperimentDetail() {
       // 在开发环境的Strict Mode下，这个cleanup会被调用两次
       // 但由于isMountedRef的保护，第二次挂载时不会重新创建连接
       console.log('[EXP_DETAIL] 🧹 Cleanup function called for experiment:', id);
-      
+
       // 只在组件真正卸载时才断开连接（ID变化或离开页面）
       if (wsRef.current) {
         console.log('[EXP_DETAIL] 🔌 Disconnecting WebSocket');
@@ -136,7 +160,7 @@ export function ExperimentDetail() {
         wsRef.current.disconnect();
         wsRef.current = null;
       }
-      
+
       // 重置挂载标志（为下次挂载准备）
       isMountedRef.current = false;
     };
@@ -145,12 +169,12 @@ export function ExperimentDetail() {
   // 根据实验状态自动断开WebSocket (实验完成后)
   useEffect(() => {
     const status = experiment?.status;
-    
+
     // 只在实验完成或失败且有活跃连接时断开
     if ((status === 'completed' || status === 'failed') && wsRef.current) {
       console.log('[EXP_DETAIL] 🏁 Experiment finished with status:', status);
       console.log('[EXP_DETAIL] 🔌 Disconnecting WebSocket');
-      
+
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
@@ -164,12 +188,12 @@ export function ExperimentDetail() {
 
   const handleRun = async () => {
     if (!id || isStarting) return;
-    
+
     setIsStarting(true);
     // 清除之前的实时进度
     setRealtimeProgress(null);
     console.log('[EXP_DETAIL] 🚀 Starting experiment:', id);
-    
+
     try {
       const result = await experimentAPI.run(id);
       console.log('[EXP_DETAIL] ✅ Experiment run API call successful:', result);
@@ -194,7 +218,7 @@ export function ExperimentDetail() {
 
   const handleDownload = () => {
     if (!experiment?.best_solution_code) return;
-    
+
     const blob = new Blob([experiment.best_solution_code], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -214,7 +238,7 @@ export function ExperimentDetail() {
       index: index + 1,
       isBuggy: false,
     })) || [];
-    
+
   const allChartData = nodes
     ?.map((node, index) => ({
       step: node.step,
@@ -222,7 +246,7 @@ export function ExperimentDetail() {
       index: index + 1,
       isBuggy: node.is_buggy,
     })) || [];
-  
+
   // 如果有非buggy节点，使用好的数据；否则使用所有数据
   const chartData = goodChartData.length > 0 ? goodChartData : allChartData;
 
@@ -258,24 +282,26 @@ export function ExperimentDetail() {
       {/* Header */}
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900">{experiment.name}</h1>
-          <p className="text-gray-600 mt-2">{experiment.description}</p>
+          <h1 className="text-4xl font-bold text-gray-900">{experiment?.name}</h1>
+          <div className="mt-2">
+            <DescriptionWithToggle description={experiment?.description || ''} />
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-shrink-0">
           {experiment.status === 'pending' && (
-            <Button 
-              onClick={handleRun} 
+            <Button
+              onClick={handleRun}
               disabled={isStarting}
-              className="gap-2"
+              className="gap-2 whitespace-nowrap"
             >
               <Play className="w-4 h-4" />
               {isStarting ? '启动中...' : '运行实验'}
             </Button>
           )}
           {experiment.best_solution_code && (
-            <Button 
-              onClick={handleDownload} 
-              variant="secondary" 
+            <Button
+              onClick={handleDownload}
+              variant="secondary"
               size="lg"
               className="gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all duration-200 flex-row items-center whitespace-nowrap"
             >
@@ -287,98 +313,102 @@ export function ExperimentDetail() {
       </div>
 
       {/* Status Card - 运行中 */}
-      {experiment.status === 'running' && (
-        <Card className="mb-6 border-blue-300 bg-gradient-to-r from-blue-50 to-blue-100 shadow-lg relative overflow-hidden">
-          {/* 动态背景效果 */}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-transparent to-blue-400/10 animate-pulse"></div>
-          
-          {/* 移动的光效 */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-0 -left-full h-full w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
-          </div>
-          
-          <CardContent className="pt-6 relative z-10">
-            <div className="space-y-4">
-              {/* 标题行 */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
-                  <span className="text-lg font-semibold text-blue-900 flex items-center gap-1">
-                    运行中
-                    <span className="inline-flex gap-0.5">
-                      <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
-                      <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
-                      <span className="animate-bounce" style={{ animationDelay: '300ms' }}>.</span>
+      {
+        experiment.status === 'running' && (
+          <Card className="mb-6 border-blue-300 bg-gradient-to-r from-blue-50 to-blue-100 shadow-lg relative overflow-hidden">
+            {/* 动态背景效果 */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 via-transparent to-blue-400/10 animate-pulse"></div>
+
+            {/* 移动的光效 */}
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute top-0 -left-full h-full w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
+            </div>
+
+            <CardContent className="pt-6 relative z-10">
+              <div className="space-y-4">
+                {/* 标题行 */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+                    <span className="text-lg font-semibold text-blue-900 flex items-center gap-1">
+                      运行中
+                      <span className="inline-flex gap-0.5">
+                        <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
+                        <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
+                        <span className="animate-bounce" style={{ animationDelay: '300ms' }}>.</span>
+                      </span>
                     </span>
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-blue-700 font-medium">步骤</span>
-                  <span className="text-2xl font-bold text-blue-900 tabular-nums">
-                    {displayProgress.current_step}
-                  </span>
-                  <span className="text-lg text-blue-600">/</span>
-                  <span className="text-xl font-semibold text-blue-700 tabular-nums">
-                    {experiment.num_steps}
-                  </span>
-                </div>
-              </div>
-              
-              {/* 进度条 */}
-              <div className="space-y-2">
-                <div className="w-full bg-blue-200/50 rounded-full h-4 shadow-inner overflow-hidden">
-                  <div
-                    className="bg-gradient-to-r from-blue-500 via-blue-600 to-blue-500 h-4 rounded-full transition-all duration-700 ease-out relative overflow-hidden"
-                    style={{ width: `${displayProgress.progress * 100}%` }}
-                  >
-                    {/* 进度条内的光效 */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer-fast"></div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-blue-700 font-medium">步骤</span>
+                    <span className="text-2xl font-bold text-blue-900 tabular-nums">
+                      {displayProgress.current_step}
+                    </span>
+                    <span className="text-lg text-blue-600">/</span>
+                    <span className="text-xl font-semibold text-blue-700 tabular-nums">
+                      {experiment.num_steps}
+                    </span>
                   </div>
                 </div>
-                
-                {/* 进度百分比 */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-blue-700">
-                    进度: <span className="text-base font-bold text-blue-900 tabular-nums">{Math.round(displayProgress.progress * 100)}%</span>
-                  </span>
-                  <span className="text-xs text-blue-600 animate-pulse">
-                    正在处理...
-                  </span>
+
+                {/* 进度条 */}
+                <div className="space-y-2">
+                  <div className="w-full bg-blue-200/50 rounded-full h-4 shadow-inner overflow-hidden">
+                    <div
+                      className="bg-gradient-to-r from-blue-500 via-blue-600 to-blue-500 h-4 rounded-full transition-all duration-700 ease-out relative overflow-hidden"
+                      style={{ width: `${displayProgress.progress * 100}%` }}
+                    >
+                      {/* 进度条内的光效 */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer-fast"></div>
+                    </div>
+                  </div>
+
+                  {/* 进度百分比 */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-blue-700">
+                      进度: <span className="text-base font-bold text-blue-900 tabular-nums">{Math.round(displayProgress.progress * 100)}%</span>
+                    </span>
+                    <span className="text-xs text-blue-600 animate-pulse">
+                      正在处理...
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-          
-          {/* 底部装饰线 */}
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-400 animate-pulse"></div>
-        </Card>
-      )}
+            </CardContent>
+
+            {/* 底部装饰线 */}
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-400 animate-pulse"></div>
+          </Card>
+        )
+      }
 
       {/* Failed Status Card */}
-      {experiment.status === 'failed' && (
-        <Card className="mb-6 border-red-200 bg-red-50">
-          <CardContent className="pt-6">
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="flex-shrink-0">
-                  <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-red-800">实验运行失败</h3>
-                  {experiment.error_message && (
-                    <div className="mt-2 text-sm text-red-700 bg-white rounded p-3 border border-red-200">
-                      <p className="font-medium mb-1">错误信息：</p>
-                      <p className="whitespace-pre-wrap break-words">{experiment.error_message}</p>
-                    </div>
-                  )}
+      {
+        experiment.status === 'failed' && (
+          <Card className="mb-6 border-red-200 bg-red-50">
+            <CardContent className="pt-6">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0">
+                    <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-red-800">实验运行失败</h3>
+                    {experiment.error_message && (
+                      <div className="mt-2 text-sm text-red-700 bg-white rounded p-3 border border-red-200">
+                        <p className="font-medium mb-1">错误信息：</p>
+                        <p className="whitespace-pre-wrap break-words">{experiment.error_message}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )
+      }
 
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-6">
@@ -443,8 +473,8 @@ export function ExperimentDetail() {
                   <span className="text-sm font-medium text-gray-500">状态</span>
                   <p className="mt-1 capitalize font-medium">{
                     experiment.status === 'completed' ? '已完成' :
-                    experiment.status === 'running' ? '运行中' :
-                    experiment.status === 'failed' ? '失败' : '待运行'
+                      experiment.status === 'running' ? '运行中' :
+                        experiment.status === 'failed' ? '失败' : '待运行'
                   }</p>
                 </div>
                 {experiment.best_metric_value && (
@@ -495,10 +525,10 @@ export function ExperimentDetail() {
                 </CardContent>
               </Card>
             )}
-            
+
             {/* 所有迭代的代码 */}
             {nodes && nodes.length > 0 ? (
-              nodes.map((node, index) => (
+              nodes.map((node) => (
                 <Card key={node.id} className={node.is_buggy ? 'border-red-300' : 'border-green-300'}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base">
@@ -529,7 +559,7 @@ export function ExperimentDetail() {
                     >
                       {node.code}
                     </SyntaxHighlighter>
-                    
+
                     {/* 显示终端输出（如果有错误）*/}
                     {node.term_out && node.is_buggy && (
                       <div className="mt-4">
@@ -539,7 +569,7 @@ export function ExperimentDetail() {
                         </pre>
                       </div>
                     )}
-                    
+
                     {/* 显示分析（如果有）*/}
                     {node.analysis && (
                       <div className="mt-4">

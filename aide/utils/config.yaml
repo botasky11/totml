@@ -41,15 +41,17 @@ agent:
   # whether to provide the agent with a preview of the data
   data_preview: True
 
-  # LLM settings for coding
+  # LLM settings for coding[qwen-max-latest,gemini-3-pro-preview,claude-sonnet-4-5-20250929,gpt-5.2]
+  # qwen-max-latest: 0.5
+  # gemini-3-pro-preview: 1
   code:
-    model: qwen-max-latest
-    temp: 0.5
+    model: gpt-5.2
+    temp: 1
 
   # LLM settings for evaluating program output / tracebacks
   feedback:
-    model: qwen-max-latest
-    temp: 0.5
+    model: gpt-5.2
+    temp: 1
 
   # hyperparameters for the tree search
   search:

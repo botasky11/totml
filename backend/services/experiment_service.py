@@ -207,6 +207,8 @@ class ExperimentService:
 
             # Track how many nodes have been saved to avoid duplicate writes
             saved_nodes_count = 0
+            # Map from TOT node id to database node id for parent reference
+            tot_node_id_to_db_id: dict[str, str] = {}
 
             for step in range(experiment.num_steps):
                 logger.info(f"[EXP_SERVICE] Executing step {step + 1}/{experiment.num_steps}")
@@ -252,16 +254,26 @@ class ExperimentService:
                 logger.info(f"[EXP_SERVICE] Saving {len(new_nodes)} new nodes (total nodes: {len(tot_exp.journal.nodes)}, already saved: {saved_nodes_count})")
                 
                 for node in new_nodes:
-                    await self.create_node(
+                    # Get parent_id from the mapping if parent exists
+                    db_parent_id = None
+                    if node.parent is not None:
+                        db_parent_id = tot_node_id_to_db_id.get(node.parent.id)
+                        logger.debug(f"[EXP_SERVICE] Node {node.id} has parent {node.parent.id}, mapped to db_parent_id: {db_parent_id}")
+                    
+                    db_node = await self.create_node(
                         experiment_id=experiment_id,
                         step=node.step,
                         code=str(node.code),
                         plan=node.plan,
+                        parent_id=db_parent_id,
                         metric_value=float(node.metric.value) if (node.metric and node.metric.value is not None) else None,
                         is_buggy=node.is_buggy,
                         term_out=node.term_out,
                         analysis=node.analysis,
                     )
+                    # Store the mapping from TOT node id to database node id
+                    tot_node_id_to_db_id[node.id] = db_node.id
+                    logger.debug(f"[EXP_SERVICE] Saved node: TOT id={node.id} -> DB id={db_node.id}")
                 
                 # Update the count of saved nodes
                 saved_nodes_count = len(tot_exp.journal.nodes)
@@ -291,13 +303,15 @@ class ExperimentService:
             
             logger.info(f"[EXP_SERVICE] Best node selected: code_length={len(best_solution_code) if best_solution_code else 0}, metric={best_metric_value}")
             
-            # Collect journal data
+            # Collect journal data with parent information
             journal_data = [
                 {
                     "step": node.step,
                     "code": str(node.code),
                     "metric": float(node.metric.value) if (node.metric and node.metric.value is not None) else None,
                     "is_buggy": node.is_buggy,
+                    "parent_id": tot_node_id_to_db_id.get(node.parent.id) if node.parent else None,
+                    "db_id": tot_node_id_to_db_id.get(node.id),
                 }
                 for node in tot_exp.journal.nodes
             ]

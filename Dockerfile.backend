@@ -14,11 +14,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir -r backend/requirements.txt
 
 # Copy application code
-COPY aide ./aide
+COPY tot ./tot
 COPY backend ./backend
 COPY setup.py ./
 
-# Install aide package
+# Install tot package
 RUN pip install -e .
 
 # Create necessary directories

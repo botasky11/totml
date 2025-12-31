@@ -5,7 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Load .env file from project root into environment variables
-# This ensures that os.getenv() calls in AIDE code can access these variables
+# This ensures that os.getenv() calls in TOT code can access these variables
 env_path = Path(__file__).parent.parent.parent / ".env"
 if env_path.exists():
     load_dotenv(env_path)
@@ -16,12 +16,16 @@ class Settings(BaseSettings):
     
     # API Settings
     API_V1_STR: str = "/api/v1"
-    PROJECT_NAME: str = "AIDE ML - Enterprise"
+    PROJECT_NAME: str = "TOT ML - Enterprise"
     VERSION: str = "2.0.0"
     DESCRIPTION: str = "Enterprise Machine Learning Engineering Agent"
 
     # Base URL for the API
     OPENAI_BASE_URL: str = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+    ANTHROPIC_BASE_URL: Optional[str] = os.getenv("ANTHROPIC_BASE_URL")
+    GEMINI_BASE_URL: Optional[str] = os.getenv("GEMINI_BASE_URL")
+    OPENROUTER_BASE_URL: Optional[str] = os.getenv("OPENROUTER_BASE_URL")
+    DASHSCOPE_BASE_URL: Optional[str] = os.getenv("DASHSCOPE_BASE_URL")
     
     # CORS Settings
     BACKEND_CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:5173"]
@@ -32,7 +36,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     
     # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./aide.db")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./tot.db")
     
     # LLM API Keys
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
@@ -45,7 +49,7 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "./uploads"
     MAX_UPLOAD_SIZE: int = 100 * 1024 * 1024  # 100MB
     
-    # AIDE Settings
+    # TOT Settings
     WORKSPACE_BASE: str = "./workspaces"
     LOGS_DIR: str = "./logs"
     

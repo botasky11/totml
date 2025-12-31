@@ -10,7 +10,7 @@ from sqlalchemy import select, update, delete
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from aide import Experiment as AIDEExperiment
+from tot import Experiment as TOTExperiment
 from backend.models.experiment import Experiment, ExperimentNode
 from backend.schemas import ExperimentCreate, ExperimentUpdate, ExperimentStatus
 from backend.core.config import settings
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class ExperimentService:
-    """Service for managing AIDE ML experiments"""
+    """Service for managing TOT ML experiments"""
     
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -159,7 +159,7 @@ class ExperimentService:
         experiment_id: str,
         websocket_callback=None
     ):
-        """Run AIDE experiment asynchronously"""
+        """Run TOT experiment asynchronously"""
         try:
             logger.info(f"[EXP_SERVICE] Starting experiment {experiment_id}")
             logger.info(f"[EXP_SERVICE] WebSocket callback available: {websocket_callback is not None}")
@@ -193,8 +193,8 @@ class ExperimentService:
             else:
                 logger.warning(f"[EXP_SERVICE] Send initial status Failed: No active WebSocket connection for experiment {experiment_id}")
             
-            # Initialize AIDE experiment
-            aide_exp = AIDEExperiment(
+            # Initialize TOT experiment
+            tot_exp = TOTExperiment(
                 data_dir=experiment.data_dir,
                 goal=experiment.goal,
                 eval=experiment.eval_metric,
@@ -202,7 +202,7 @@ class ExperimentService:
             )
             
             # Run steps - manually control each step without intermediate visualizations
-            from aide.utils.config import save_run
+            from tot.utils.config import save_run
             logger.info(f"[EXP_SERVICE] Starting {experiment.num_steps} steps execution")
 
             # Track how many nodes have been saved to avoid duplicate writes
@@ -212,9 +212,9 @@ class ExperimentService:
                 logger.info(f"[EXP_SERVICE] Executing step {step + 1}/{experiment.num_steps}")
 
                 # Execute one agent step WITHOUT generating visualization
-                aide_exp.agent.step(exec_callback=aide_exp.interpreter.run)
+                tot_exp.agent.step(exec_callback=tot_exp.interpreter.run)
                 # Save the run state without generating expensive visualization
-                save_run(aide_exp.cfg, aide_exp.journal, generate_viz=False)
+                save_run(tot_exp.cfg, tot_exp.journal, generate_viz=False)
 
                 # Update progress
                 progress = (step + 1) / experiment.num_steps
@@ -248,8 +248,8 @@ class ExperimentService:
                 
                 # Save only NEW nodes to avoid duplicate writes
                 # Only process nodes that haven't been saved yet
-                new_nodes = aide_exp.journal.nodes[saved_nodes_count:]
-                logger.info(f"[EXP_SERVICE] Saving {len(new_nodes)} new nodes (total nodes: {len(aide_exp.journal.nodes)}, already saved: {saved_nodes_count})")
+                new_nodes = tot_exp.journal.nodes[saved_nodes_count:]
+                logger.info(f"[EXP_SERVICE] Saving {len(new_nodes)} new nodes (total nodes: {len(tot_exp.journal.nodes)}, already saved: {saved_nodes_count})")
                 
                 for node in new_nodes:
                     await self.create_node(
@@ -264,27 +264,27 @@ class ExperimentService:
                     )
                 
                 # Update the count of saved nodes
-                saved_nodes_count = len(aide_exp.journal.nodes)
+                saved_nodes_count = len(tot_exp.journal.nodes)
                 logger.info(f"[EXP_SERVICE] Updated saved_nodes_count to {saved_nodes_count}")
             
             # Cleanup interpreter session
-            aide_exp.interpreter.cleanup_session()
+            tot_exp.interpreter.cleanup_session()
             
             # Generate final tree visualization ONLY ONCE at the end
             try:
-                save_run(aide_exp.cfg, aide_exp.journal, generate_viz=True)
+                save_run(tot_exp.cfg, tot_exp.journal, generate_viz=True)
                 logger.info(f"Generated final tree visualization for experiment {experiment_id}")
             except Exception as viz_error:
                 logger.warning(f"Failed to generate tree visualization: {viz_error}")
             
             # Get best solution
             # 首先尝试获取非buggy的最佳节点
-            best_node = aide_exp.journal.get_best_node(only_good=True)
+            best_node = tot_exp.journal.get_best_node(only_good=True)
             
             # 如果没有非buggy节点，获取所有节点中的第一个（即使是buggy的）
-            if not best_node and aide_exp.journal.nodes:
+            if not best_node and tot_exp.journal.nodes:
                 logger.info(f"[EXP_SERVICE] No good nodes found, using first node from all nodes")
-                best_node = aide_exp.journal.nodes[0]
+                best_node = tot_exp.journal.nodes[0]
             
             best_solution_code = str(best_node.code) if best_node else None
             best_metric_value = float(best_node.metric.value) if (best_node and best_node.metric and best_node.metric.value is not None) else None
@@ -299,7 +299,7 @@ class ExperimentService:
                     "metric": float(node.metric.value) if (node.metric and node.metric.value is not None) else None,
                     "is_buggy": node.is_buggy,
                 }
-                for node in aide_exp.journal.nodes
+                for node in tot_exp.journal.nodes
             ]
             
             # Update experiment with results

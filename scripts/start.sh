@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# AIDE ML Enterprise Start Script
+# TOT ML Enterprise Start Script
 
 set -e
 
-echo "🚀 Starting AIDE ML Enterprise..."
+echo "🚀 Starting TOT ML Enterprise..."
 
 # Start backend in background
 echo "🔧 Starting backend..."

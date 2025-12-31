@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# AIDE ML Enterprise Setup Script
+# TOT ML Enterprise Setup Script
 
 set -e
 
-echo "🚀 Setting up AIDE ML Enterprise..."
+echo "🚀 Setting up TOT ML Enterprise..."
 
 # Check if .env exists
 if [ ! -f .env ]; then

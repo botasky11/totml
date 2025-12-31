@@ -1,4 +1,4 @@
-# 🚀 AIDE ML Enterprise - 快速启动指南
+# 🚀 TOT ML Enterprise - 快速启动指南
 
 ## 最快的开始方式（5分钟）
 
@@ -170,6 +170,6 @@ docker-compose up
 
 ## 🎉 开始使用吧！
 
-现在你已经准备好使用 AIDE ML Enterprise 了。
+现在你已经准备好使用 TOT ML Enterprise 了。
 
 祝你使用愉快！🚀

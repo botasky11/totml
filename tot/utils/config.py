@@ -19,7 +19,7 @@ shutup.mute_warnings()
 logging.basicConfig(
     level="WARNING", format="%(message)s", datefmt="[%X]", handlers=[RichHandler()]
 )
-logger = logging.getLogger("aide")
+logger = logging.getLogger("tot")
 logger.setLevel(logging.WARNING)
 
 

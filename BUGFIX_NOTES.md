@@ -245,17 +245,17 @@ TypeError: float() argument must be a string or a real number, not 'NoneType'
 
 ### 根本原因
 
-在处理 AIDE 生成的节点时，代码假设如果 `node.metric` 存在，那么 `node.metric.value` 就一定有值：
+在处理 TOT 生成的节点时，代码假设如果 `node.metric` 存在，那么 `node.metric.value` 就一定有值：
 
 ```python
 # ❌ 错误：只检查了 metric 存在，没有检查 value
 metric_value=float(node.metric.value) if node.metric else None
 ```
 
-但实际上 AIDE 可能会创建 metric 对象，但 value 仍然是 None（例如代码执行失败、评估失败等情况）。
+但实际上 TOT 可能会创建 metric 对象，但 value 仍然是 None（例如代码执行失败、评估失败等情况）。
 
 **错误发生的场景**：
-1. AIDE 执行代码但没有产生有效的评估结果
+1. TOT 执行代码但没有产生有效的评估结果
 2. 代码运行出错，无法计算 metric
 3. 评估函数返回 None
 4. 节点被标记为 buggy，metric 为空

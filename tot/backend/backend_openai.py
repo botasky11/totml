@@ -10,7 +10,7 @@ from .utils import FunctionSpec, OutputType, opt_messages_to_list, backoff_creat
 from funcy import notnone, once, select_values
 import openai
 
-logger = logging.getLogger("aide")
+logger = logging.getLogger("tot")
 
 # Base URL for the OpenAI-compatible API.
 # Allow overriding via environment variable OPENAI_BASE_URL, falling back to the official endpoint.

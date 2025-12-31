@@ -11,12 +11,12 @@ import sys
 from dotenv import load_dotenv
 import logging
 
-# Add project root to sys.path to allow importing aide
+# Add project root to sys.path to allow importing tot
 project_root = str(Path(__file__).resolve().parent.parent.parent)
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-from aide import Experiment
+from tot import Experiment
 
 # Set up logging configuration
 logging.basicConfig(
@@ -25,7 +25,7 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stderr)],
 )
 
-logger = logging.getLogger("aide")
+logger = logging.getLogger("tot")
 logger.setLevel(logging.INFO)
 
 console = Console(file=sys.stderr)
@@ -33,7 +33,7 @@ console = Console(file=sys.stderr)
 
 class WebUI:
     """
-    WebUI encapsulates the Streamlit application logic for the AIDE Machine Learning Engineer Agent.
+    WebUI encapsulates the Streamlit application logic for the TOT Machine Learning Engineer Agent.
     """
 
     def __init__(self):
@@ -163,7 +163,7 @@ class WebUI:
         goal_text, eval_text, num_steps = self.handle_user_inputs()
         if st.button("运行智能助手", type="primary", use_container_width=True):
             with st.spinner("智能助手正在运行中..."):
-                results = self.run_aide(
+                results = self.run_tot(
                     uploaded_files, goal_text, eval_text, num_steps, results_col
                 )
                 st.session_state.results = results
@@ -267,9 +267,9 @@ class WebUI:
 
         return example_files
 
-    def run_aide(self, files, goal_text, eval_text, num_steps, results_col):
+    def run_tot(self, files, goal_text, eval_text, num_steps, results_col):
         """
-        Run the AIDE experiment with the provided inputs.
+        Run the TOT experiment with the provided inputs.
 
         Args:
             files (list): List of uploaded or example files.
@@ -392,7 +392,7 @@ class WebUI:
     @staticmethod
     def initialize_experiment(input_dir, goal_text, eval_text):
         """
-        Initialize the AIDE Experiment.
+        Initialize the TOT Experiment.
 
         Args:
             input_dir (Path): Path to the input directory.

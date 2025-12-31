@@ -26,7 +26,7 @@ def setup_logging() -> None:
         "backend.services.experiment_service",
         "backend.api.experiments",
         "backend.main",
-        "aide",  # IMPORTANT: aide package's config.py sets logger to WARNING, override to INFO
+        "tot",  # IMPORTANT: tot package's config.py sets logger to WARNING, override to INFO
     ]
     
     for logger_name in loggers_to_configure:

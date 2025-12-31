@@ -6,8 +6,8 @@ FROM python:3.10-slim AS builder
 # Install build dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        build-essential \
-        gcc \
+    build-essential \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -15,7 +15,7 @@ WORKDIR /app
 
 # Copy only the files needed for installation
 COPY requirements.txt setup.py README.md ./
-COPY aide ./aide
+COPY tot ./tot
 
 # Create virtual environment and install dependencies
 RUN python -m venv /opt/venv && \
@@ -29,11 +29,11 @@ FROM python:3.10-slim
 # Install runtime dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        unzip \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
-RUN useradd -m -u 1000 aide
+RUN useradd -m -u 1000 totml
 
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
@@ -46,10 +46,10 @@ WORKDIR /app
 
 # Create and set permissions for logs and workspaces
 RUN mkdir -p logs workspaces && \
-    chown -R aide:aide /app
+    chown -R tot:tot /app
 
 # Switch to non-root user
-USER aide
+USER totml
 
 # Set default command
-ENTRYPOINT ["aide"]
+ENTRYPOINT ["totml"]

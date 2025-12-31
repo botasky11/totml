@@ -26,7 +26,7 @@ from rich.status import Status
 from rich.tree import Tree
 from .utils.config import load_task_desc, prep_agent_workspace, save_run, load_cfg
 
-logger = logging.getLogger("aide")
+logger = logging.getLogger("tot")
 
 
 def journal_to_rich_tree(journal: Journal):
@@ -119,7 +119,7 @@ def run():
                     equal=True,
                 ),
             ),
-            title=f'[b]AIDE is working on experiment: [bold green]"{cfg.exp_name}[/b]"',
+            title=f'[b]TOT is working on experiment: [bold green]"{cfg.exp_name}[/b]"',
             subtitle="Press [b]Ctrl+C[/b] to stop the run",
         )
 

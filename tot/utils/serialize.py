@@ -8,7 +8,7 @@ from ..journal import Journal
 
 
 def dumps_json(obj: dataclasses_json.DataClassJsonMixin):
-    """Serialize AIDE dataclasses (such as Journals) to JSON."""
+    """Serialize TOT dataclasses (such as Journals) to JSON."""
     if isinstance(obj, Journal):
         obj = copy.deepcopy(obj)
         node2parent = {n.id: n.parent.id for n in obj.nodes if n.parent is not None}
@@ -34,7 +34,7 @@ G = TypeVar("G", bound=dataclasses_json.DataClassJsonMixin)
 
 
 def loads_json(s: str, cls: Type[G]) -> G:
-    """Deserialize JSON to AIDE dataclasses."""
+    """Deserialize JSON to TOT dataclasses."""
     obj_dict = json.loads(s)
     obj = cls.from_dict(obj_dict)
 

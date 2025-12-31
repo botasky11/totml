@@ -1,7 +1,7 @@
 .PHONY: docker docker-build docker-run install clean
 
 # Docker image name
-IMAGE_NAME = aide
+IMAGE_NAME = totml
 
 # Python version and venv
 PYTHON = python3.10
@@ -35,7 +35,7 @@ docker-run:
 	docker run -it --rm \
 		-v "$(LOGS_DIR):/app/logs" \
 		-v "$(WORKSPACE_BASE):/app/workspaces" \
-		-v "$(PWD)/aide/example_tasks:/app/data" \
+		-v "$(PWD)/tot/example_tasks:/app/data" \
 		-e OPENAI_API_KEY="$(OPENAI_API_KEY)" \
 		$(IMAGE_NAME) \
 		data_dir=/app/data/house_prices \

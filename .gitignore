@@ -175,7 +175,7 @@ node_modules/
 package-lock.json
 
 # database files
-aide.db
+tot.db
 data/
 logs/
 uploads/

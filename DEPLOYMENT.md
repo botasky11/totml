@@ -1,4 +1,4 @@
-# AIDE ML Enterprise - Deployment Guide
+# TOT ML Enterprise - Deployment Guide
 
 ## 📋 Table of Contents
 
@@ -32,7 +32,7 @@
 ```bash
 # 1. Clone repository
 git clone <repository-url>
-cd aideml
+cd totml
 
 # 2. Run setup script
 bash scripts/setup.sh
@@ -204,7 +204,7 @@ server {
 
     # Frontend
     location / {
-        root /var/www/aide-ml/frontend/dist;
+        root /var/www/tot-ml/frontend/dist;
         try_files $uri $uri/ /index.html;
     }
 
@@ -229,20 +229,20 @@ server {
 
 ### Systemd Service (Linux)
 
-Create `/etc/systemd/system/aide-backend.service`:
+Create `/etc/systemd/system/tot-backend.service`:
 
 ```ini
 [Unit]
-Description=AIDE ML Backend
+Description=TOT ML Backend
 After=network.target
 
 [Service]
 Type=notify
 User=www-data
 Group=www-data
-WorkingDirectory=/opt/aide-ml
-Environment="PATH=/opt/aide-ml/venv/bin"
-ExecStart=/opt/aide-ml/venv/bin/gunicorn backend.main:app \
+WorkingDirectory=/opt/tot-ml
+Environment="PATH=/opt/tot-ml/venv/bin"
+ExecStart=/opt/tot-ml/venv/bin/gunicorn backend.main:app \
     --workers 4 \
     --worker-class uvicorn.workers.UvicornWorker \
     --bind 127.0.0.1:8000
@@ -254,9 +254,9 @@ WantedBy=multi-user.target
 
 Enable and start:
 ```bash
-sudo systemctl enable aide-backend
-sudo systemctl start aide-backend
-sudo systemctl status aide-backend
+sudo systemctl enable tot-backend
+sudo systemctl start tot-backend
+sudo systemctl status tot-backend
 ```
 
 ## SSL/TLS Configuration
@@ -285,7 +285,7 @@ docker-compose logs -f backend
 docker-compose logs -f frontend
 
 # Systemd logs
-sudo journalctl -u aide-backend -f
+sudo journalctl -u tot-backend -f
 ```
 
 ### Health Checks
@@ -304,16 +304,16 @@ curl http://localhost:8000/docs
 
 ```bash
 # Backup database
-cp data/aide.db backups/aide-$(date +%Y%m%d).db
+cp data/tot.db backups/tot-$(date +%Y%m%d).db
 
 # Automated backup script
 #!/bin/bash
-BACKUP_DIR="/backups/aide"
+BACKUP_DIR="/backups/tot"
 mkdir -p $BACKUP_DIR
-cp /app/data/aide.db $BACKUP_DIR/aide-$(date +%Y%m%d-%H%M%S).db
+cp /app/data/tot.db $BACKUP_DIR/tot-$(date +%Y%m%d-%H%M%S).db
 
 # Keep only last 30 days
-find $BACKUP_DIR -name "aide-*.db" -mtime +30 -delete
+find $BACKUP_DIR -name "tot-*.db" -mtime +30 -delete
 ```
 
 ## Scaling Considerations
@@ -386,10 +386,10 @@ node --version  # Should be 18+
 
 ```bash
 # Check database file permissions
-ls -la data/aide.db
+ls -la data/tot.db
 
 # Recreate database
-rm data/aide.db
+rm data/tot.db
 python -c "import asyncio; from backend.database import init_db; asyncio.run(init_db())"
 ```
 

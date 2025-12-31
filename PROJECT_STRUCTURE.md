@@ -1,10 +1,10 @@
-# 📁 AIDE ML Enterprise - 项目结构说明
+# 📁 TOT ML Enterprise - 项目结构说明
 
 ## 整体结构
 
 ```
-aide-ml-enterprise/
-├── 📦 aide/                      # 原有 AIDE 算法核心
+tot-ml-enterprise/
+├── 📦 tot/                      # 原有 TOT 算法核心
 │   ├── agent.py                 # AI Agent 实现
 │   ├── journal.py               # 实验记录
 │   ├── interpreter.py           # 代码执行器
@@ -82,11 +82,9 @@ aide-ml-enterprise/
 │   └── Makefile.new            # Make 命令集合
 │
 ├── 📚 文档
-│   ├── README.md               # 原始 README
-│   ├── README_REFACTORED.md    # 重构版 README
+│   ├── README.md               # README
 │   ├── QUICK_START.md          # 快速启动指南
 │   ├── DEPLOYMENT.md           # 部署指南
-│   ├── REFACTORING_SUMMARY.md  # 重构总结
 │   └── PROJECT_STRUCTURE.md    # 本文档
 │
 └── 📊 数据目录（运行时创建）
@@ -128,7 +126,7 @@ aide-ml-enterprise/
 #### Services 层 (`backend/services/`)
 - **职责**: 业务逻辑实现
 - **主要文件**:
-  - `experiment_service.py`: 实验管理、AIDE 集成、异步任务
+  - `experiment_service.py`: 实验管理、TOT 集成、异步任务
 
 ### 2. Frontend（前端）
 
@@ -151,9 +149,9 @@ aide-ml-enterprise/
 - **职责**: TypeScript 类型定义
 - 确保类型安全，提供智能提示
 
-### 3. AIDE Core（算法核心）
+### 3. TOT Core（算法核心）
 
-保留原有的 AIDE 算法实现：
+保留原有的 TOT 算法实现：
 - **Agent**: 树搜索策略
 - **Journal**: 实验节点管理
 - **Interpreter**: 代码执行
@@ -164,9 +162,9 @@ aide-ml-enterprise/
 ### 创建实验流程
 
 ```
-用户 → Frontend → Backend API → Service → Database → AIDE Core
+用户 → Frontend → Backend API → Service → Database → TOT Core
                                                         ↓
-用户 ← Frontend ← WebSocket ← Service ← AIDE Core (执行)
+用户 ← Frontend ← WebSocket ← Service ← TOT Core (执行)
 ```
 
 ### 详细步骤
@@ -177,7 +175,7 @@ aide-ml-enterprise/
 4. **Backend 接收**: `POST /api/v1/experiments/` 端点
 5. **Service 处理**: ExperimentService 创建数据库记录
 6. **Database 存储**: SQLAlchemy 保存到数据库
-7. **运行实验**: 后台任务调用 AIDE Core
+7. **运行实验**: 后台任务调用 TOT Core
 8. **实时更新**: WebSocket 推送进度到前端
 9. **完成**: 更新数据库，通知前端
 
@@ -273,7 +271,7 @@ npm run build
 
 ### 添加新的 LLM 模型
 
-1. 在 `aide/backend/` 添加新的后端适配器
+1. 在 `tot/backend/` 添加新的后端适配器
 2. 更新 `backend/core/config.py` 添加配置
 3. 在前端 `NewExperiment.tsx` 添加选项
 

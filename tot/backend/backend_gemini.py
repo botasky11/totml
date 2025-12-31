@@ -9,7 +9,7 @@ from .utils import FunctionSpec, OutputType, opt_messages_to_list, backoff_creat
 from funcy import notnone, once, select_values
 import openai
 
-logger = logging.getLogger("aide")
+logger = logging.getLogger("tot")
 
 _client: openai.OpenAI = None  # type: ignore
 

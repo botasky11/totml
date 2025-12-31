@@ -1,9 +1,9 @@
-# AIDE ML Enterprise Makefile
+# TOT ML Enterprise Makefile
 
 .PHONY: help setup install-backend install-frontend dev-backend dev-frontend dev docker-build docker-up docker-down clean test
 
 help:
-	@echo "AIDE ML Enterprise - Available Commands"
+	@echo "TOT ML Enterprise - Available Commands"
 	@echo ""
 	@echo "  make setup           - Initial setup (install dependencies)"
 	@echo "  make dev             - Start development servers"
@@ -14,7 +14,7 @@ help:
 	@echo "  make test            - Run tests"
 
 setup:
-	@echo "🚀 Setting up AIDE ML Enterprise..."
+	@echo "🚀 Setting up TOT ML Enterprise..."
 	@bash scripts/setup.sh
 
 install-backend:

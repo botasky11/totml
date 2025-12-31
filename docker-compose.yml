@@ -8,7 +8,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite+aiosqlite:///./data/aide.db
+      - DATABASE_URL=sqlite+aiosqlite:///./data/tot.db
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
@@ -19,7 +19,7 @@ services:
       - ./uploads:/app/uploads
       - ./workspaces:/app/workspaces
     networks:
-      - aide-network
+      - tot-network
     command: uvicorn backend.main:app --host 0.0.0.0 --port 8000
 
   frontend:
@@ -31,10 +31,10 @@ services:
     depends_on:
       - backend
     networks:
-      - aide-network
+      - tot-network
 
 networks:
-  aide-network:
+  tot-network:
     driver: bridge
 
 volumes:

@@ -9,7 +9,7 @@ import openai
 
 from .utils import FunctionSpec, OutputType, backoff_create
 
-logger = logging.getLogger("aide")
+logger = logging.getLogger("tot")
 
 _client: openai.OpenAI = None  # type: ignore
 

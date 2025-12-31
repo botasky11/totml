@@ -1,4 +1,4 @@
-# AIDE requirements
+# TOT requirements
 black==24.3.0
 funcy==2.0
 humanize==4.8.0

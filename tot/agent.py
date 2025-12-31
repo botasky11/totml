@@ -11,7 +11,7 @@ from .utils.config import Config
 from .utils.metric import MetricValue, WorstMetricValue
 from .utils.response import extract_code, extract_text_up_to_code, wrap_code
 
-logger = logging.getLogger("aide")
+logger = logging.getLogger("tot")
 
 
 ExecCallbackType = Callable[[str, bool], ExecutionResult]

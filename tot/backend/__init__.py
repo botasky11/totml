@@ -4,7 +4,7 @@ import re
 import logging
 import os
 
-logger = logging.getLogger("aide")
+logger = logging.getLogger("tot")
 
 
 def determine_provider(model: str) -> tuple[str, dict[str, str]]:

@@ -7,17 +7,17 @@ with open("requirements.txt", "r") as f:
     requirements = f.read().splitlines()
 
 setup(
-    name="aideml",
-    version="0.2.2",
-    author="Weco AI",
-    author_email="contact@weco.ai",
+    name="totml",
+    version="0.1.0",
+    author="PSBC",
+    author_email="xxxxxx",
     description="Autonomous AI for Data Science and Machine Learning",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/Wecoai/aideml",
+    url="https://github.com/psbc/totml",
     packages=find_packages(),
     package_data={
-        "aide": [
+        "totml": [
             "../requirements.txt",
             "utils/config.yaml",
             "utils/viz_templates/*",
@@ -35,7 +35,7 @@ setup(
     install_requires=requirements,
     entry_points={
         "console_scripts": [
-            "aide = aide.run:run",
+            "totml = totml.run:run",
         ],
     },
 )

@@ -10,7 +10,7 @@ import litellm
 from .utils import FunctionSpec, OutputType, opt_messages_to_list, backoff_create
 from funcy import notnone, select_values
 
-logger = logging.getLogger("aide")
+logger = logging.getLogger("tot")
 
 LITELLM_TIMEOUT_EXCEPTIONS = (
     litellm.exceptions.RateLimitError,

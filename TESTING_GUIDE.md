@@ -1,4 +1,4 @@
-# 🧪 AIDE ML Enterprise - 测试指南
+# 🧪 TOT ML Enterprise - 测试指南
 
 ## 快速验证修复
 
@@ -228,7 +228,7 @@ logger.debug(f"Experiment status: {experiment.status}")
 
 ```bash
 # 查看SQLite数据库
-sqlite3 aide.db
+sqlite3 tot.db
 
 # 查询实验
 SELECT id, name, status, created_at FROM experiments;
@@ -291,7 +291,7 @@ console.log(import.meta.env.VITE_WS_URL)
 #!/bin/bash
 # save as test_fixes.sh
 
-echo "Testing AIDE ML Fixes..."
+echo "Testing TOT ML Fixes..."
 
 # Test API health
 echo "1. Testing API health..."

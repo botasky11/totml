@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Play, Download, Code, BarChart3, Loader2 } from 'lucide-react';
+import { ArrowLeft, Play, Download, Code, BarChart3, Loader2, GitBranch } from 'lucide-react';
 import { experimentAPI } from '@/services/api';
 import { WebSocketService } from '@/services/websocket';
 import { Button } from '@/components/ui/Button';
@@ -10,6 +10,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { WebSocketMessage } from '@/types';
+import { IterationTreeGraph } from '@/components/IterationTreeGraph';
 
 
 const DescriptionWithToggle = ({ description }: { description: string }) => {
@@ -38,7 +39,7 @@ const DescriptionWithToggle = ({ description }: { description: string }) => {
 export function ExperimentDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'code' | 'metrics' | 'logs'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'code' | 'tree' | 'metrics' | 'logs'>('overview');
   const [wsMessages, setWsMessages] = useState<WebSocketMessage[]>([]);
   const [isStarting, setIsStarting] = useState(false);
   const wsRef = useRef<WebSocketService | null>(null);
@@ -416,6 +417,7 @@ export function ExperimentDetail() {
           {[
             { key: 'overview', label: '概览' },
             { key: 'code', label: '代码' },
+            { key: 'tree', label: '迭代图' },
             { key: 'metrics', label: '指标' },
             { key: 'logs', label: '日志' }
           ].map((tab) => (
@@ -592,6 +594,26 @@ export function ExperimentDetail() {
               </Card>
             )}
           </div>
+        )}
+
+        {activeTab === 'tree' && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <GitBranch className="w-5 h-5" />
+                迭代树图
+              </CardTitle>
+              <CardDescription>
+                可视化展示所有迭代节点的树形结构，支持拖拽、缩放、折叠和最优路径高亮
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <IterationTreeGraph 
+                experimentNodes={nodes || []} 
+                bestMetricValue={experiment?.best_metric_value}
+              />
+            </CardContent>
+          </Card>
         )}
 
         {activeTab === 'metrics' && (

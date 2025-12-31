@@ -27,7 +27,7 @@ exec:
 generate_report: True
 # LLM settings for final report from journal
 report:
-  model: qwen-max-latest
+  model: gpt-5.2
   temp: 1.0
 
 # agent hyperparams

@@ -23,12 +23,12 @@ export function NewExperiment() {
     mutationFn: async () => {
       // Create experiment
       const experiment = await experimentAPI.create(formData);
-      
+
       // Upload files if any
       if (files.length > 0) {
         await experimentAPI.uploadFiles(experiment.id, files);
       }
-      
+
       return experiment;
     },
     onSuccess: (experiment) => {
@@ -172,10 +172,10 @@ export function NewExperiment() {
                   value={formData.model_name}
                   onChange={(e) => setFormData({ ...formData, model_name: e.target.value })}
                 >
-                  <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                  <option value="gpt-4">GPT-4</option>
-                  <option value="claude-4-sonnet">Claude 4 Sonnet</option>
-                  <option value="gemini-pro">Gemini Pro</option>
+                  <option value="gpt-5.2">GPT-5.2</option>
+                  <option value="qwen-max-latest">Qwen Max Latest</option>
+                  <option value="claude-sonnet-4-5-20250929">Claude 4.5 Sonnet</option>
+                  <option value="gemini-3-pro-preview">Gemini 3 Pro Preview</option>
                 </select>
               </div>
             </div>

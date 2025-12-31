@@ -198,6 +198,7 @@ class ExperimentService:
                 data_dir=experiment.data_dir,
                 goal=experiment.goal,
                 eval=experiment.eval_metric,
+                model=experiment.model_name,
             )
             
             # Run steps - manually control each step without intermediate visualizations

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, Any
 from datetime import datetime
 from enum import Enum
@@ -12,15 +12,9 @@ class ExperimentStatus(str, Enum):
 
 
 class ExperimentCreate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
-    goal: str = Field(..., min_length=1)
-    eval_metric: str = Field(..., min_length=1)
-    num_steps: int = Field(default=20, ge=1, le=100)
-    model_name: Optional[str] = "gpt-4-turbo"
-    
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        protected_namespaces=(),
+        json_schema_extra={
             "example": {
                 "name": "House Price Prediction",
                 "description": "Predict sales prices using the provided dataset",
@@ -30,6 +24,15 @@ class ExperimentCreate(BaseModel):
                 "model_name": "gpt-4-turbo"
             }
         }
+    )
+    
+    name: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = None
+    goal: str = Field(..., min_length=1)
+    eval_metric: str = Field(..., min_length=1)
+    num_steps: int = Field(default=20, ge=1, le=100)
+    model_name: Optional[str] = "gpt-4-turbo"
+
 
 
 class ExperimentUpdate(BaseModel):
@@ -43,6 +46,8 @@ class ExperimentUpdate(BaseModel):
 
 
 class ExperimentResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=(), from_attributes=True)
+    
     id: str
     name: str
     description: Optional[str]
@@ -61,9 +66,6 @@ class ExperimentResponse(BaseModel):
     completed_at: Optional[datetime]
     config: Optional[Any]
     journal_data: Optional[Any]
-    
-    class Config:
-        from_attributes = True
 
 
 class NodeCreate(BaseModel):

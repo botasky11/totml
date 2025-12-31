@@ -21,13 +21,14 @@ class Solution:
 
 
 class Experiment:
-    def __init__(self, data_dir: str, goal: str, eval: str | None = None):
+    def __init__(self, data_dir: str, goal: str, eval: str | None = None, model: str | None = None):
         """Initialize a new experiment run.
 
         Args:
             data_dir (str): Path to the directory containing the data files.
             goal (str): Description of the goal of the task.
             eval (str | None, optional): Optional description of the preferred way for the agent to evaluate its solutions.
+            model (str | None, optional): Optional model name to override the default model configuration.
         """
 
         _cfg = _load_cfg(use_cli_args=False)
@@ -35,6 +36,11 @@ class Experiment:
         _cfg.goal = goal
         _cfg.eval = eval
         self.cfg = prep_cfg(_cfg)
+        
+        # Override model configuration if model is provided
+        if model:
+            self.cfg.agent.code.model = model
+            self.cfg.agent.feedback.model = model
 
         self.task_desc = load_task_desc(self.cfg)
 

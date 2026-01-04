@@ -172,9 +172,10 @@ export function NewExperiment() {
                   value={formData.model_name}
                   onChange={(e) => setFormData({ ...formData, model_name: e.target.value })}
                 >
-                  <option value="gpt-5.2">GPT-5.2</option>
                   <option value="qwen-max-latest">Qwen Max Latest</option>
+                  <option value="deepseek-v3.2">DeepSeek V3.2</option>
                   <option value="qwen3-32b">Qwen 3 32B</option>
+                  <option value="gpt-5.2">GPT-5.2</option>
                   <option value="claude-sonnet-4-5-20250929">Claude 4.5 Sonnet</option>
                   <option value="gemini-3-pro-preview">Gemini 3 Pro Preview</option>
                 </select>

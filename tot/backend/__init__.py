@@ -40,6 +40,11 @@ def determine_provider(model: str) -> tuple[str, dict[str, str]]:
         api_base = os.getenv("OPENROUTER_BASE_URL")
         provider = "openai"
         formatted_model = f"{provider}/{model}"
+    elif model.startswith("deepseek"):
+        api_base = os.getenv("DEEPSEEK_BASE_URL")
+        api_key = os.getenv("DEEPSEEK_API_KEY")
+        provider = "deepseek"
+        formatted_model = f"{provider}/{model}"
     
     provider_kwargs = {
         "model": formatted_model,
@@ -56,6 +61,7 @@ provider_to_query_func = {
     "openrouter": backend_litellm.query,
     "gemini": backend_litellm.query,
     "dashscope": backend_litellm.query,
+    "deepseek": backend_litellm.query,
 }
 
 

@@ -20,6 +20,27 @@ LITELLM_TIMEOUT_EXCEPTIONS = (
 )
 
 
+def _fix_malformed_json(json_str: str) -> str:
+    """
+    Attempt to fix common JSON malformation issues from LLM output.
+    
+    Common issues:
+    - Empty values like "metric": , (should be "metric": null)
+    - Trailing commas
+    - Missing quotes around keys
+    """
+    # Fix empty values: "key": , -> "key": null,
+    # Pattern matches: "key": followed by comma or closing brace
+    fixed = re.sub(r':\s*,', ': null,', json_str)
+    fixed = re.sub(r':\s*}', ': null}', fixed)
+    
+    # Fix trailing commas before closing braces/brackets
+    fixed = re.sub(r',\s*}', '}', fixed)
+    fixed = re.sub(r',\s*]', ']', fixed)
+    
+    return fixed
+
+
 def query(
     system_message: str | None,
     user_message: str | None,
@@ -92,8 +113,15 @@ def query(
             try:
                 output = json.loads(tool_call.function.arguments)
             except json.JSONDecodeError as ex:
-                logger.error(f"Error decoding function args: {tool_call.function.arguments}")
-                raise ex
+                # Try to fix common JSON issues from LLM output
+                logger.warning(f"Error decoding function args, attempting to fix: {tool_call.function.arguments}")
+                fixed_args = _fix_malformed_json(tool_call.function.arguments)
+                try:
+                    output = json.loads(fixed_args)
+                    logger.info(f"Successfully fixed malformed JSON")
+                except json.JSONDecodeError:
+                    logger.error(f"Failed to fix malformed JSON: {tool_call.function.arguments}")
+                    raise ex
         else:
              logger.warning(f"Function mismatch: {tool_call.function.name} != {func_spec.name}")
 

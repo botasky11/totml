@@ -105,6 +105,13 @@ export function Dashboard() {
                     </span>
                   </div>
 
+                  {experiment.model_name && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500">模型</span>
+                      <span className="text-sm font-medium text-gray-700">{experiment.model_name}</span>
+                    </div>
+                  )}
+
                   {experiment.status === 'running' && (
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm">

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Play, Download, Code, BarChart3, Loader2, GitBranch } from 'lucide-react';
+import { ArrowLeft, Play, Download, Code, BarChart3, Loader2, GitBranch, FileText } from 'lucide-react';
 import { experimentAPI } from '@/services/api';
 import { WebSocketService } from '@/services/websocket';
 import { Button } from '@/components/ui/Button';
@@ -39,7 +39,7 @@ const DescriptionWithToggle = ({ description }: { description: string }) => {
 export function ExperimentDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'code' | 'tree' | 'metrics' | 'logs'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'code' | 'tree' | 'metrics' | 'report' | 'logs'>('overview');
   const [wsMessages, setWsMessages] = useState<WebSocketMessage[]>([]);
   const [isStarting, setIsStarting] = useState(false);
   const wsRef = useRef<WebSocketService | null>(null);
@@ -419,6 +419,7 @@ export function ExperimentDetail() {
             { key: 'code', label: '代码' },
             { key: 'tree', label: '迭代图' },
             { key: 'metrics', label: '指标' },
+            { key: 'report', label: '报告' },
             { key: 'logs', label: '日志' }
           ].map((tab) => (
             <button
@@ -611,6 +612,7 @@ export function ExperimentDetail() {
               <IterationTreeGraph 
                 experimentNodes={nodes || []} 
                 bestMetricValue={experiment?.best_metric_value}
+                lowerIsBetter={experiment?.journal_data?.lower_is_better}
               />
             </CardContent>
           </Card>
@@ -651,6 +653,46 @@ export function ExperimentDetail() {
                 <p className="text-gray-500 text-center py-8">
                   暂无指标数据
                 </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === 'report' && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                实验报告
+              </CardTitle>
+              <CardDescription>
+                基于实验结果生成的技术报告
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {experiment?.journal_data?.report ? (
+                <div className="prose prose-sm max-w-none">
+                  <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                    <div 
+                      className="markdown-content text-gray-700"
+                      style={{ whiteSpace: 'pre-wrap' }}
+                    >
+                      {experiment.journal_data.report}
+                    </div>
+                  </div>
+                  {experiment.journal_data.report_file_path && (
+                    <div className="mt-4 text-sm text-gray-500">
+                      报告已保存至: <code className="bg-gray-100 px-2 py-1 rounded">{experiment.journal_data.report_file_path}</code>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">
+                    {experiment?.status === 'completed' ? '暂无报告数据' : '实验完成后将自动生成报告'}
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>

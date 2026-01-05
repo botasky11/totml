@@ -354,7 +354,8 @@ const NodeDetailPanel = ({ node, onClose }: NodeDetailPanelProps) => {
 // 自动布局算法 - 树形布局 (左到右)
 const calculateTreeLayout = (
   experimentNodes: ExperimentNode[],
-  collapsedNodes: Set<string>
+  collapsedNodes: Set<string>,
+  lowerIsBetter?: boolean // true if metric should be minimized (lower is better)
 ): { nodes: IterationFlowNode[]; edges: Edge[] } => {
   if (!experimentNodes || experimentNodes.length === 0) {
     return { nodes: [], edges: [] };
@@ -380,13 +381,22 @@ const calculateTreeLayout = (
   const rootNodes = experimentNodes.filter(n => !n.parent_id);
   
   // 找到最佳节点
+  // 根据 lowerIsBetter 参数决定比较方向：
+  // - lowerIsBetter === true: 越小越好 (如 MSE, RMSE, MAE)
+  // - lowerIsBetter === false: 越大越好 (如 accuracy, AUC, R2)
+  // - lowerIsBetter === undefined: 默认越大越好
   const bestNode = experimentNodes.reduce((best, node) => {
     if (node.is_buggy) return best;
     if (!best) return node;
     if (node.metric_value !== null && node.metric_value !== undefined) {
       if (best.metric_value === null || best.metric_value === undefined) return node;
-      // 假设指标值越高越好
-      return node.metric_value > best.metric_value ? node : best;
+      
+      // 根据指标方向比较
+      const isBetterNode = lowerIsBetter 
+        ? node.metric_value < best.metric_value  // 越小越好
+        : node.metric_value > best.metric_value; // 越大越好 (默认)
+      
+      return isBetterNode ? node : best;
     }
     return best;
   }, null as ExperimentNode | null);
@@ -509,9 +519,10 @@ const nodeTypes = {
 interface IterationTreeGraphContentProps {
   experimentNodes: ExperimentNode[];
   bestMetricValue?: number;
+  lowerIsBetter?: boolean; // true if metric should be minimized, false if maximized
 }
 
-const IterationTreeGraphContent = ({ experimentNodes, bestMetricValue }: IterationTreeGraphContentProps) => {
+const IterationTreeGraphContent = ({ experimentNodes, bestMetricValue, lowerIsBetter }: IterationTreeGraphContentProps) => {
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
   const [selectedNode, setSelectedNode] = useState<ExperimentNode | null>(null);
   const [highlightBestPath, setHighlightBestPath] = useState(true);
@@ -519,8 +530,8 @@ const IterationTreeGraphContent = ({ experimentNodes, bestMetricValue }: Iterati
 
   // 计算布局
   const { nodes: initialNodes, edges: initialEdges } = useMemo(
-    () => calculateTreeLayout(experimentNodes, collapsedNodes),
-    [experimentNodes, collapsedNodes]
+    () => calculateTreeLayout(experimentNodes, collapsedNodes, lowerIsBetter),
+    [experimentNodes, collapsedNodes, lowerIsBetter]
   );
 
   // 更新节点回调函数
@@ -703,14 +714,16 @@ const IterationTreeGraphContent = ({ experimentNodes, bestMetricValue }: Iterati
 interface IterationTreeGraphProps {
   experimentNodes: ExperimentNode[];
   bestMetricValue?: number;
+  lowerIsBetter?: boolean; // true if metric should be minimized, false if maximized
 }
 
-export const IterationTreeGraph = ({ experimentNodes, bestMetricValue }: IterationTreeGraphProps) => {
+export const IterationTreeGraph = ({ experimentNodes, bestMetricValue, lowerIsBetter }: IterationTreeGraphProps) => {
   return (
     <ReactFlowProvider>
       <IterationTreeGraphContent 
         experimentNodes={experimentNodes} 
         bestMetricValue={bestMetricValue}
+        lowerIsBetter={lowerIsBetter}
       />
     </ReactFlowProvider>
   );

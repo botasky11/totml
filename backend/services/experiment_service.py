@@ -11,6 +11,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from tot import Experiment as TOTExperiment
+from tot.journal2report import journal2report
 from backend.models.experiment import Experiment, ExperimentNode
 from backend.schemas import ExperimentCreate, ExperimentUpdate, ExperimentStatus
 from backend.core.config import settings
@@ -316,6 +317,32 @@ class ExperimentService:
                 for node in tot_exp.journal.nodes
             ]
             
+            # Generate final report from journal
+            report_content = None
+            report_file_path = None
+            if tot_exp.cfg.generate_report:
+                try:
+                    logger.info(f"[EXP_SERVICE] Generating final report from journal...")
+                    report_content = journal2report(
+                        tot_exp.journal, 
+                        tot_exp.task_desc, 
+                        tot_exp.cfg.report
+                    )
+                    report_file_path = tot_exp.cfg.log_dir / "report.md"
+                    with open(report_file_path, "w") as f:
+                        f.write(report_content)
+                    logger.info(f"[EXP_SERVICE] Report written to file: {report_file_path}")
+                except Exception as report_error:
+                    logger.warning(f"[EXP_SERVICE] Failed to generate report: {report_error}")
+            
+            # Prepare final journal data with report
+            final_journal_data = {
+                "nodes": journal_data,
+                "report": report_content,
+                "report_file_path": str(report_file_path) if report_file_path else None,
+                "log_dir": str(tot_exp.cfg.log_dir),
+            }
+            
             # Update experiment with results
             await self.update_experiment(
                 experiment_id,
@@ -323,7 +350,7 @@ class ExperimentService:
                     status=ExperimentStatus.COMPLETED,
                     best_solution_code=best_solution_code,
                     best_metric_value=best_metric_value,
-                    journal_data=journal_data,
+                    journal_data=final_journal_data,
                     progress=1.0
                 )
             )

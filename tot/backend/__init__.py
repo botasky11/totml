@@ -30,7 +30,7 @@ def determine_provider(model: str) -> tuple[str, dict[str, str]]:
         api_key = os.getenv("GEMINI_API_KEY")
         provider = "gemini"
         formatted_model = f"{provider}/{model}"
-    elif model.startswith("qwen"):
+    elif model.startswith("qwen") or model.startswith("qwq"):
         api_base = os.getenv("DASHSCOPE_BASE_URL")
         api_key = os.getenv("DASHSCOPE_API_KEY")
         provider = "dashscope"
@@ -100,10 +100,9 @@ def query(
         logger.error(f"Unknown model: {model}")
         raise ValueError(f"Unknown model: {model}")
     
-    #Anthropic 的 Messages API 强制要求至少有 1 条非 system 消息（user/assistant）
-    if provider == "anthropic":
-        if not user_message:
-            user_message = "Please continue."
+    # 大多数 LLM 的 Messages API 要求至少有 1 条非 system 消息（user/assistant）
+    if not user_message:
+        user_message = "Please proceed with the task as described above."
 
     query_func = provider_to_query_func[provider]
     output, req_time, in_tok_count, out_tok_count, info = query_func(

@@ -304,6 +304,13 @@ class ExperimentService:
             
             logger.info(f"[EXP_SERVICE] Best node selected: code_length={len(best_solution_code) if best_solution_code else 0}, metric={best_metric_value}")
             
+            # Determine if lower_is_better based on the best node's metric
+            # MetricValue has a `maximize` field: True = higher is better, False = lower is better
+            lower_is_better = None
+            if best_node and best_node.metric and best_node.metric.maximize is not None:
+                lower_is_better = not best_node.metric.maximize
+                logger.info(f"[EXP_SERVICE] Metric direction: lower_is_better={lower_is_better}")
+            
             # Collect journal data with parent information
             journal_data = [
                 {
@@ -341,6 +348,7 @@ class ExperimentService:
                 "report": report_content,
                 "report_file_path": str(report_file_path) if report_file_path else None,
                 "log_dir": str(tot_exp.cfg.log_dir),
+                "lower_is_better": lower_is_better,  # True if metric should be minimized, False if maximized
             }
             
             # Update experiment with results

@@ -28,6 +28,7 @@ def _fix_malformed_json(json_str: str) -> str:
     - Empty values like "metric": , (should be "metric": null)
     - Trailing commas
     - Missing quotes around keys
+    - Multiple JSON objects (e.g., schema + actual data)
     """
     # Fix empty values: "key": , -> "key": null,
     # Pattern matches: "key": followed by comma or closing brace
@@ -39,6 +40,63 @@ def _fix_malformed_json(json_str: str) -> str:
     fixed = re.sub(r',\s*]', ']', fixed)
     
     return fixed
+
+
+def _extract_json_from_response(json_str: str) -> str:
+    """
+    Extract the actual JSON data from LLM response that may contain multiple JSON objects.
+    
+    Some LLMs return both schema and actual data, e.g.:
+    {"properties": {...}, "required": [...], "type": "object"}
+    {"is_bug": true, "metric": null, ...}
+    
+    This function tries to extract the actual data (the second JSON object).
+    """
+    json_str = json_str.strip()
+    
+    # Try to find all JSON objects in the string
+    # We'll look for balanced braces
+    objects = []
+    depth = 0
+    start = -1
+    
+    for i, char in enumerate(json_str):
+        if char == '{':
+            if depth == 0:
+                start = i
+            depth += 1
+        elif char == '}':
+            depth -= 1
+            if depth == 0 and start != -1:
+                obj_str = json_str[start:i+1]
+                objects.append(obj_str)
+                start = -1
+    
+    if not objects:
+        return json_str
+    
+    # If there's only one object, return it
+    if len(objects) == 1:
+        return objects[0]
+    
+    # If there are multiple objects, try to find the actual data (not schema)
+    # Schema typically has "properties", "type": "object", "required" at top level
+    for obj_str in objects:
+        try:
+            obj = json.loads(obj_str)
+            # Check if this looks like a schema definition
+            if isinstance(obj, dict):
+                # Schema indicators
+                is_schema = ('properties' in obj and 'type' in obj and obj.get('type') == 'object')
+                if not is_schema:
+                    # This is likely the actual data
+                    return obj_str
+        except json.JSONDecodeError:
+            continue
+    
+    # If we couldn't identify the data object, return the last one
+    # (often the schema comes first, data comes second)
+    return objects[-1] if objects else json_str
 
 
 def query(
@@ -115,13 +173,21 @@ def query(
             except json.JSONDecodeError as ex:
                 # Try to fix common JSON issues from LLM output
                 logger.warning(f"Error decoding function args, attempting to fix: {tool_call.function.arguments}")
-                fixed_args = _fix_malformed_json(tool_call.function.arguments)
+                
+                # First try to extract JSON from multiple objects (e.g., schema + data)
+                extracted_json = _extract_json_from_response(tool_call.function.arguments)
                 try:
-                    output = json.loads(fixed_args)
-                    logger.info(f"Successfully fixed malformed JSON")
+                    output = json.loads(extracted_json)
+                    logger.info(f"Successfully extracted JSON from multi-object response")
                 except json.JSONDecodeError:
-                    logger.error(f"Failed to fix malformed JSON: {tool_call.function.arguments}")
-                    raise ex
+                    # Then try to fix common malformation issues
+                    fixed_args = _fix_malformed_json(extracted_json)
+                    try:
+                        output = json.loads(fixed_args)
+                        logger.info(f"Successfully fixed malformed JSON")
+                    except json.JSONDecodeError:
+                        logger.error(f"Failed to fix malformed JSON: {tool_call.function.arguments}")
+                        raise ex
         else:
              logger.warning(f"Function mismatch: {tool_call.function.name} != {func_spec.name}")
 

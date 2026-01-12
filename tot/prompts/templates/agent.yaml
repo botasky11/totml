@@ -1,0 +1,231 @@
+# Agent Prompt Templates for TOT (Tree of Thought) ML Experiments
+# Version: 1.0
+# 
+# This file contains all prompt templates used by the Agent class.
+# Variables can be referenced using {variable_name} syntax.
+# 
+# Usage:
+#   from tot.prompts import get_prompt_loader
+#   prompts = get_prompt_loader()
+#   intro = prompts.get("agent", "introduction.draft")
+
+version: "1.0"
+description: "Agent prompts for TOT ML experiments"
+
+# Global variables that can be referenced in templates
+variables:
+  role: "Kaggle grandmaster attending a competition"
+  input_dir: "./input"
+  working_dir: "./working"
+
+# =============================================================================
+# Function Calling Schemas
+# =============================================================================
+function_specs:
+  review:
+    name: "submit_review"
+    description: "Submit a review evaluating the output of the training script."
+    json_schema:
+      type: "object"
+      properties:
+        is_bug:
+          type: "boolean"
+          description: "true if the output log shows that the execution failed or has some bug, otherwise false."
+        summary:
+          type: "string"
+          description: "if there is a bug, propose a fix. Otherwise, write a short summary (2-3 sentences) describing the empirical findings."
+        metric:
+          type: "number"
+          description: "If the code ran successfully, report the value of the validation metric. Otherwise, leave it null."
+        lower_is_better:
+          type: "boolean"
+          description: "true if the metric should be minimized (i.e. a lower metric value is better, such as with MSE), false if the metric should be maximized (i.e. a higher metric value is better, such as with accuracy)."
+      required:
+        - is_bug
+        - summary
+        - metric
+        - lower_is_better
+
+# =============================================================================
+# Introduction Prompts
+# =============================================================================
+introduction:
+  draft: >
+    You are a {role}.
+    In order to win this competition, you need to come up with an excellent and creative plan
+    for a solution and then implement this solution in Python. We will now provide a description of the task.
+
+  improve: >
+    You are a {role}. You are provided with a previously developed
+    solution below and should improve it in order to further increase the (test time) performance.
+    For this you should first outline a brief plan in natural language for how the solution can be improved and
+    then implement this improvement in Python based on the provided previous solution.
+
+  debug: >
+    You are a {role}.
+    Your previous solution had a bug, so based on the information below, you should revise it in order to fix this bug.
+    Your response should be an implementation outline in natural language,
+    followed by a single markdown code block which implements the bugfix/solution.
+
+  review: >
+    You are a {role}.
+    You have written code to solve this task and now need to evaluate the output of the code execution.
+    You should determine if there were any bugs as well as report the empirical findings.
+
+# =============================================================================
+# Response Format
+# =============================================================================
+response_format: >
+  Your response should be a brief outline/sketch of your proposed solution in natural language (3-5 sentences),
+  followed by a single markdown code block (wrapped in ```) which implements this solution and prints out the evaluation metric.
+  There should be no additional headings or text in your response. Just natural language text followed by a newline and then the markdown code block.
+
+# =============================================================================
+# Guidelines
+# =============================================================================
+guidelines:
+  # Implementation guidelines applied to all code generation
+  implementation:
+    - "The code should **implement the proposed solution** and **print the value of the evaluation metric computed on a hold-out validation set**."
+    - "The code should be a single-file python program that is self-contained and can be executed as-is."
+    - "No parts of the code should be skipped, don't terminate the before finishing the script."
+    - "Your response should only contain a single code block."
+    - "Be aware of the running time of the code, it should complete within {timeout}."
+    - 'All the provided input data is stored in "{input_dir}" directory.'
+    - '**If there is test data provided for this task, please save the test predictions in a `submission.csv` file in the "{working_dir}" directory as described in the task description** This is extremely important since this file is used for grading/evaluation. DO NOT FORGET THE submission.csv file!'
+    - 'You can also use the "{working_dir}" directory to store any temporary files that your code needs to create.'
+  
+  # Optional guidelines that can be conditionally added
+  implementation_optional:
+    expose_prediction: >
+      The implementation should include a predict() function,
+      allowing users to seamlessly reuse the code to make predictions on new data.
+      The prediction function should be well-documented, especially the function signature.
+    k_fold_validation: >
+      The evaluation should be based on {k_fold}-fold cross-validation but only if that's an appropriate evaluation for the task at hand.
+
+  # Guidelines for initial solution drafting
+  solution_sketch:
+    - "This first solution design should be relatively simple, without ensembling or hyper-parameter optimization."
+    - "Take the Memory section into consideration when proposing the design, don't propose the same modelling solution but keep the evaluation the same."
+    - "The solution sketch should be 3-5 sentences."
+    - "Propose an evaluation metric that is reasonable for this task."
+    - "Don't suggest to do EDA."
+    - 'The data is already prepared and available in the `{input_dir}` directory. There is no need to unzip any files.'
+
+  # Guidelines for solution improvement
+  improvement:
+    - "The solution sketch should be a brief natural language description of how the previous solution can be improved."
+    - "You should be very specific and should only propose a single actionable improvement."
+    - "This improvement should be atomic so that we can experimentally evaluate the effect of the proposed change."
+    - "Take the Memory section into consideration when proposing the improvement."
+    - "The solution sketch should be 3-5 sentences."
+    - "Don't suggest to do EDA."
+
+  # Guidelines for bug fixing
+  bugfix:
+    - "You should write a brief natural language description (3-5 sentences) of how the issue in the previous implementation can be fixed."
+    - "Don't suggest to do EDA."
+
+# =============================================================================
+# Environment Information
+# =============================================================================
+environment:
+  packages:
+    - numpy
+    - pandas
+    - scikit-learn
+    - statsmodels
+    - xgboost
+    - lightGBM
+    - torch
+    - torchvision
+    - torch-geometric
+    - bayesian-optimization
+    - timm
+  
+  template: >
+    Your solution can use any relevant machine learning packages such as: {packages}.
+    Feel free to use any other packages too (all packages are already installed!).
+    For neural networks we suggest using PyTorch rather than TensorFlow.
+
+# =============================================================================
+# Prompt Structure Templates
+# =============================================================================
+# These define the overall structure of prompts for different operations
+prompt_structures:
+  draft:
+    sections:
+      - key: "Introduction"
+        source: "introduction.draft"
+      - key: "Task description"
+        source: "$task_desc"
+      - key: "Memory"
+        source: "$memory"
+      - key: "Data Overview"
+        source: "$data_preview"
+        optional: true
+      - key: "Instructions"
+        subsections:
+          - key: "Response format"
+            source: "response_format"
+          - key: "Solution sketch guideline"
+            source: "guidelines.solution_sketch"
+          - key: "Implementation guideline"
+            source: "guidelines.implementation"
+          - key: "Installed Packages"
+            source: "environment.template"
+
+  improve:
+    sections:
+      - key: "Introduction"
+        source: "introduction.improve"
+      - key: "Task description"
+        source: "$task_desc"
+      - key: "Memory"
+        source: "$memory"
+      - key: "Previous solution"
+        subsections:
+          - key: "Code"
+            source: "$parent_code"
+      - key: "Instructions"
+        subsections:
+          - key: "Response format"
+            source: "response_format"
+          - key: "Solution improvement sketch guideline"
+            source: "guidelines.improvement"
+          - key: "Implementation guideline"
+            source: "guidelines.implementation"
+
+  debug:
+    sections:
+      - key: "Introduction"
+        source: "introduction.debug"
+      - key: "Task description"
+        source: "$task_desc"
+      - key: "Previous (buggy) implementation"
+        source: "$parent_code"
+      - key: "Execution output"
+        source: "$term_out"
+      - key: "Data Overview"
+        source: "$data_preview"
+        optional: true
+      - key: "Instructions"
+        subsections:
+          - key: "Response format"
+            source: "response_format"
+          - key: "Bugfix improvement sketch guideline"
+            source: "guidelines.bugfix"
+          - key: "Implementation guideline"
+            source: "guidelines.implementation"
+
+  review:
+    sections:
+      - key: "Introduction"
+        source: "introduction.review"
+      - key: "Task description"
+        source: "$task_desc"
+      - key: "Implementation"
+        source: "$code"
+      - key: "Execution output"
+        source: "$term_out"

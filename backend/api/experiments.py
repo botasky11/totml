@@ -9,8 +9,12 @@ from pathlib import Path
 import logging
 
 from backend.database import get_db
-from backend.schemas import ExperimentCreate, ExperimentUpdate, ExperimentResponse, NodeResponse, ExperimentStatus
+from backend.schemas import (
+    ExperimentCreate, ExperimentUpdate, ExperimentResponse, 
+    NodeResponse, ExperimentStatus, FeatureAnalysisReportResponse
+)
 from backend.services.experiment_service import ExperimentService
+from backend.services.feature_analysis_service import FeatureAnalysisService
 from backend.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -186,6 +190,58 @@ async def get_experiment_nodes(
     service = ExperimentService(db)
     nodes = await service.get_experiment_nodes(experiment_id)
     return nodes
+
+
+@router.get("/{experiment_id}/analysis", response_model=FeatureAnalysisReportResponse)
+async def get_feature_analysis_report(
+    experiment_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get feature analysis report for an experiment"""
+    service = FeatureAnalysisService(db)
+    report = await service.get_report_by_experiment(experiment_id)
+    
+    if not report:
+        raise HTTPException(status_code=404, detail="Feature analysis report not found")
+    
+    return report
+
+
+@router.post("/{experiment_id}/analysis", response_model=FeatureAnalysisReportResponse)
+async def generate_feature_analysis_report(
+    experiment_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Generate or regenerate feature analysis report for an experiment.
+    
+    This endpoint can be used to:
+    1. Generate a report for experiments that completed before this feature was added
+    2. Regenerate a report with updated analysis
+    
+    Note: The experiment must be in COMPLETED status.
+    """
+    # First check if experiment exists and is completed
+    exp_service = ExperimentService(db)
+    experiment = await exp_service.get_experiment(experiment_id)
+    
+    if not experiment:
+        raise HTTPException(status_code=404, detail="Experiment not found")
+    
+    if experiment.status != "completed":
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Experiment must be completed to generate analysis report (current status: {experiment.status})"
+        )
+    
+    # Generate the report
+    service = FeatureAnalysisService(db)
+    try:
+        report = await service.generate_analysis_report(experiment_id)
+        return report
+    except Exception as e:
+        logger.error(f"Failed to generate analysis report: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate analysis report: {str(e)}")
 
 
 @router.websocket("/ws/{experiment_id}")

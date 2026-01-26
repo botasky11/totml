@@ -101,3 +101,43 @@ class WebSocketMessage(BaseModel):
     type: str  # status_update, log, error, complete
     data: Any
     timestamp: datetime = Field(default_factory=datetime.now)
+
+
+class FeatureAnalysisReportResponse(BaseModel):
+    """特征分析报告响应模型"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: str
+    experiment_id: str
+    best_node_id: Optional[str]
+    
+    # 数据概况统计
+    data_profile: Optional[Any] = None
+    
+    # 特征分析
+    feature_importance: Optional[Any] = None
+    feature_stability: Optional[Any] = None
+    
+    # 模型分析
+    model_stability: Optional[Any] = None
+    model_evaluation: Optional[Any] = None
+    
+    # 特征统计
+    feature_statistics: Optional[Any] = None
+    
+    # 完整报告
+    full_report_md: Optional[str] = None
+    
+    # 元数据
+    analysis_config: Optional[Any] = None
+    error_message: Optional[str] = None
+    
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+
+class FeatureAnalysisCreate(BaseModel):
+    """创建特征分析报告请求"""
+    experiment_id: str
+    best_node_id: Optional[str] = None
+    analysis_config: Optional[Any] = None

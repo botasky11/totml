@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Text, Float, Boolean, DateTime, JSON
+from sqlalchemy import Column, Integer, String, Text, Float, Boolean, DateTime, JSON, ForeignKey
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from backend.database.base import Base
 import uuid
 
@@ -62,3 +63,37 @@ class ExperimentNode(Base):
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class FeatureAnalysisReport(Base):
+    """特征分析报告表 - 存储实验完成后的完整分析报告"""
+    __tablename__ = "feature_analysis_reports"
+    
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    experiment_id = Column(String(36), ForeignKey("experiments.id"), nullable=False, unique=True, index=True)
+    best_node_id = Column(String(36), ForeignKey("experiment_nodes.id"), nullable=True)
+    
+    # 数据概况统计 (建模前)
+    data_profile = Column(JSON)  # DataProfileResult.to_dict()
+    
+    # 特征分析 (建模后)
+    feature_importance = Column(JSON)  # FeatureImportanceReport.to_dict()
+    feature_stability = Column(JSON)   # FeatureStabilityReport.to_dict()
+    
+    # 模型分析 (建模后)
+    model_stability = Column(JSON)     # ModelStabilityResult.to_dict()
+    model_evaluation = Column(JSON)    # ModelEvaluationReport.to_dict()
+    
+    # 特征统计指标
+    feature_statistics = Column(JSON)  # List[FeatureStatistics.to_dict()]
+    
+    # 完整报告
+    full_report_md = Column(Text)      # Markdown 格式的完整报告
+    
+    # 分析元数据
+    analysis_config = Column(JSON)     # 分析配置参数
+    error_message = Column(Text)       # 分析过程中的错误信息
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())

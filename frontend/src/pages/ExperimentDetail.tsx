@@ -11,6 +11,7 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { WebSocketMessage } from '@/types';
 import { IterationTreeGraph } from '@/components/IterationTreeGraph';
+import { FeatureAnalysisReportView } from '@/components/FeatureAnalysisReport';
 
 
 const DescriptionWithToggle = ({ description }: { description: string }) => {
@@ -594,43 +595,58 @@ export function ExperimentDetail() {
         )}
 
         {activeTab === 'report' && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                实验报告
-              </CardTitle>
-              <CardDescription>
-                基于实验结果生成的技术报告
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {experiment?.journal_data?.report ? (
-                <div className="prose prose-sm max-w-none">
-                  <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-                    <div 
-                      className="markdown-content text-gray-700"
-                      style={{ whiteSpace: 'pre-wrap' }}
-                    >
-                      {experiment.journal_data.report}
+          <div className="space-y-6">
+            {/* 特征分析报告 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  特征分析报告
+                </CardTitle>
+                <CardDescription>
+                  建模前数据统计 + 建模后评估分析（剔除 Buggy 节点，仅分析 Best Node）
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FeatureAnalysisReportView 
+                  experimentId={id!}
+                  experimentStatus={experiment?.status || 'pending'}
+                />
+              </CardContent>
+            </Card>
+
+            {/* 原有的实验报告（如果存在） */}
+            {experiment?.journal_data?.report && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    实验技术报告
+                  </CardTitle>
+                  <CardDescription>
+                    基于实验结果生成的技术报告
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="prose prose-sm max-w-none">
+                    <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                      <div 
+                        className="markdown-content text-gray-700"
+                        style={{ whiteSpace: 'pre-wrap' }}
+                      >
+                        {experiment.journal_data.report}
+                      </div>
                     </div>
+                    {experiment.journal_data.report_file_path && (
+                      <div className="mt-4 text-sm text-gray-500">
+                        报告已保存至: <code className="bg-gray-100 px-2 py-1 rounded">{experiment.journal_data.report_file_path}</code>
+                      </div>
+                    )}
                   </div>
-                  {experiment.journal_data.report_file_path && (
-                    <div className="mt-4 text-sm text-gray-500">
-                      报告已保存至: <code className="bg-gray-100 px-2 py-1 rounded">{experiment.journal_data.report_file_path}</code>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">
-                    {experiment?.status === 'completed' ? '暂无报告数据' : '实验完成后将自动生成报告'}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
 
         {activeTab === 'logs' && (

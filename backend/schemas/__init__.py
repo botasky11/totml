@@ -6,6 +6,8 @@ from .experiment import (
     NodeCreate,
     NodeResponse,
     WebSocketMessage,
+    FeatureAnalysisReportResponse,
+    FeatureAnalysisCreate,
 )
 
 __all__ = [
@@ -16,4 +18,6 @@ __all__ = [
     "NodeCreate",
     "NodeResponse",
     "WebSocketMessage",
+    "FeatureAnalysisReportResponse",
+    "FeatureAnalysisCreate",
 ]

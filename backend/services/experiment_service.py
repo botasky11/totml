@@ -12,11 +12,17 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from tot import Experiment as TOTExperiment
 from tot.journal2report import journal2report
-from backend.models.experiment import Experiment, ExperimentNode
+from backend.models.experiment import Experiment, ExperimentNode, FeatureAnalysisReport
 from backend.schemas import ExperimentCreate, ExperimentUpdate, ExperimentStatus
 from backend.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+# 延迟导入 FeatureAnalysisService，避免循环导入
+def _get_feature_analysis_service(db):
+    from backend.services.feature_analysis_service import FeatureAnalysisService
+    return FeatureAnalysisService(db)
 
 
 class ExperimentService:
@@ -362,6 +368,25 @@ class ExperimentService:
                     progress=1.0
                 )
             )
+            
+            # Generate feature analysis report (剔除 buggy nodes)
+            try:
+                logger.info(f"[EXP_SERVICE] Generating feature analysis report...")
+                feature_analysis_service = _get_feature_analysis_service(self.db)
+                
+                # 获取 best_node 的数据库 ID
+                best_node_db_id = None
+                if best_node:
+                    best_node_db_id = tot_node_id_to_db_id.get(best_node.id)
+                
+                analysis_report = await feature_analysis_service.generate_analysis_report(
+                    experiment_id=experiment_id,
+                    best_node_id=best_node_db_id
+                )
+                logger.info(f"[EXP_SERVICE] Feature analysis report generated: {analysis_report.id}")
+            except Exception as analysis_error:
+                logger.warning(f"[EXP_SERVICE] Failed to generate feature analysis report: {analysis_error}")
+                # 分析报告生成失败不影响实验完成状态
             
             # Send completion message
             logger.info(f"[EXP_SERVICE] Experiment completed, sending completion message")

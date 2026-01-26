@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Experiment, ExperimentCreate, ExperimentNode } from '@/types';
+import type { Experiment, ExperimentCreate, ExperimentNode, FeatureAnalysisReport } from '@/types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
@@ -66,6 +66,18 @@ export const experimentAPI = {
   // Get experiment nodes
   getNodes: async (experimentId: string): Promise<ExperimentNode[]> => {
     const response = await api.get<ExperimentNode[]>(`/experiments/${experimentId}/nodes`);
+    return response.data;
+  },
+
+  // Get feature analysis report
+  getAnalysisReport: async (experimentId: string): Promise<FeatureAnalysisReport> => {
+    const response = await api.get<FeatureAnalysisReport>(`/experiments/${experimentId}/analysis`);
+    return response.data;
+  },
+
+  // Generate feature analysis report
+  generateAnalysisReport: async (experimentId: string): Promise<FeatureAnalysisReport> => {
+    const response = await api.post<FeatureAnalysisReport>(`/experiments/${experimentId}/analysis`);
     return response.data;
   },
 };
